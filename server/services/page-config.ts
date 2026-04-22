@@ -23,7 +23,7 @@ function pickSkill(analysis: AnalyzeContractResult): SkillName {
   if (analysis.skillMatch) {
     return analysis.requestedSkill;
   }
-  return analysis.recommendedSkills[0] ?? analysis.requestedSkill;
+  return analysis.recommendedSkills?.[0] ?? analysis.requestedSkill;
 }
 
 export function buildPageConfig(analysis: AnalyzeContractResult): PageConfig {
@@ -82,6 +82,7 @@ export function buildPageConfig(analysis: AnalyzeContractResult): PageConfig {
     description: `Generated ${skillLabels[skill]} preview for ${analysis.contractName || analysis.contractAddress}.`,
     chain: analysis.chain,
     chainId: chainIdByKey[analysis.chain],
+    rpcUrl: 'https://evmtestnet.confluxrpc.com',
     contractAddress: analysis.contractAddress,
     contractName: analysis.contractName,
     skill,

@@ -36,5 +36,6 @@ export async function runBuilderAgent(input: BuilderTaskInput): Promise<BuilderT
       skillMatch: analysis.skillMatch,
       recommendedSkills: analysis.recommendedSkills,
     },
+    error: '',
   };
 }

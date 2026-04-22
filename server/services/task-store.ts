@@ -30,7 +30,11 @@ export function createTaskStore({ dataDir }: TaskStoreOptions) {
   const saveTask = async (task: BuilderTask) => {
     await ensureDataDir();
     const validated = builderTaskSchema.parse(task);
-    await writeFile(taskFilePath(validated.id), JSON.stringify(validated, null, 2), 'utf8');
+    const persistedTaskId = validated.id ?? validated.taskId;
+    if (!persistedTaskId) {
+      throw new Error('Task is missing an id/taskId field.');
+    }
+    await writeFile(taskFilePath(persistedTaskId), JSON.stringify(validated, null, 2), 'utf8');
     return validated;
   };
 
@@ -87,7 +91,7 @@ export function createTaskStore({ dataDir }: TaskStoreOptions) {
         return builderTaskSchema.parse(JSON.parse(content));
       }),
     );
-    return tasks.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    return tasks.sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''));
   };
 
   return {

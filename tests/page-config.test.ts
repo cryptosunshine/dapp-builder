@@ -6,13 +6,14 @@ import type { AbiEntry } from '../shared/schema';
 const stakingAbi: AbiEntry[] = [
   { type: 'function', name: 'stake', stateMutability: 'nonpayable', inputs: [{ name: 'amount', type: 'uint256' }], outputs: [] },
   { type: 'function', name: 'unstake', stateMutability: 'nonpayable', inputs: [{ name: 'amount', type: 'uint256' }], outputs: [] },
-  { type: 'function', name: 'claimRewards', stateMutability: 'nonpayable', inputs: [], outputs: [] },
+  { type: 'function', name: 'claim', stateMutability: 'nonpayable', inputs: [], outputs: [] },
   { type: 'function', name: 'earned', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
+  { type: 'function', name: 'rewardRate', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256' }] },
   { type: 'function', name: 'upgradeTo', stateMutability: 'nonpayable', inputs: [{ name: 'implementation', type: 'address' }], outputs: [] },
 ];
 
 describe('buildPageConfig', () => {
-  test('groups useful read/action/danger sections for a staking page', () => {
+  test('builds read/write sections, keeps rpcUrl metadata, and does not expose dangerous admin methods', () => {
     const analysis = analyzeContract({
       abi: stakingAbi,
       contractAddress: '0x1234567890123456789012345678901234567890',
@@ -24,13 +25,15 @@ describe('buildPageConfig', () => {
     const pageConfig = buildPageConfig(analysis);
 
     expect(pageConfig.skill).toBe('staking-page');
+    expect(pageConfig.chainId).toBe(71);
+    expect(pageConfig.rpcUrl).toBe('https://evmtestnet.confluxrpc.com');
     expect(pageConfig.methods.map((method) => method.name)).toEqual(
-      expect.arrayContaining(['stake', 'unstake', 'claimRewards', 'earned']),
+      expect.arrayContaining(['earned', 'rewardRate', 'stake', 'unstake', 'claim']),
     );
+    expect(pageConfig.methods.map((method) => method.name)).not.toContain('upgradeTo');
     expect(pageConfig.sections.map((section) => section.title)).toEqual(
-      expect.arrayContaining(['Overview', 'Read data', 'Actions', 'Danger zone']),
+      expect.arrayContaining(['Overview', 'Read methods', 'Write methods']),
     );
-    expect(pageConfig.dangerousMethods.map((method) => method.name)).toContain('upgradeTo');
-    expect(pageConfig.methods.find((method) => method.name === 'stake')?.label).toMatch(/stake/i);
+    expect(pageConfig.warnings.join(' ')).toMatch(/wallet|network|danger/i);
   });
 });

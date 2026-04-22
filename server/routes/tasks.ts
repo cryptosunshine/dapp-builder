@@ -27,12 +27,19 @@ export function createTaskRouter({ taskStore }: CreateTaskRouterOptions) {
 
       void (async () => {
         try {
-          await taskStore.updateTask(task.id, { status: 'processing' });
+          const taskId = task.id ?? task.taskId;
+          if (!taskId) {
+            throw new Error('Created task is missing an id/taskId field.');
+          }
+          await taskStore.updateTask(taskId, { status: 'processing' });
           const result = await runBuilderAgent(input);
-          await taskStore.updateTask(task.id, { status: 'completed', result });
+          await taskStore.updateTask(taskId, { status: 'completed', result });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown task failure';
-          await taskStore.updateTask(task.id, { status: 'failed', error: message });
+          const taskId = task.id ?? task.taskId;
+          if (taskId) {
+            await taskStore.updateTask(taskId, { status: 'failed', error: message });
+          }
         }
       })();
 
