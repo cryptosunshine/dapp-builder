@@ -1,19 +1,58 @@
-# Frontend Dynamic Preview Prompt
+# 前端动态预览提示词
 
-占位文件。
+请实现 dapp-builder 的前端 MVP。
 
-后面你补充这个 prompt 时，建议重点约束：
-- pageConfig 到 UI 的映射规则
-- section 布局规则
-- 方法表单渲染规则
-- 钱包连接与网络校验规则
-- 读方法 / 写方法交互流程
-- 结果展示、错误提示、风险提示样式口径
-- 危险方法的默认展示策略
+目标：
+提供一个输入页和一个预览页。
 
-当前最相关代码位置：
-- `src/components/PreviewPage.tsx`
-- `src/components/MethodCard.tsx`
-- `src/components/WalletBar.tsx`
-- `src/lib/contract.ts`
-- `src/lib/wallet.ts`
+页面 1：创建任务页
+功能：
+- 表单输入：
+  - contractAddress
+  - chain（默认 Conflux eSpace Testnet）
+  - skill
+  - model
+  - apiKey
+- 点击提交后调用：
+  POST /api/tasks
+- 跳转到任务详情页
+
+页面 2：任务详情 / 预览页
+路由：
+- /tasks/:taskId
+- /app/:taskId
+
+功能：
+1. 轮询任务状态：
+   GET /api/tasks/:taskId
+
+2. 显示任务阶段：
+   - pending
+   - running
+   - success
+   - failed
+
+3. 成功后读取 pageConfig，并动态渲染：
+   - 页面标题
+   - 风险提示
+   - 只读方法区
+   - 写方法区
+   - 调用结果展示区
+
+4. 页面必须包含：
+   - 钱包连接
+   - 网络检查（chainId=71）
+   - 合约方法交互表单
+   - loading / error / success 状态
+
+技术要求：
+- React
+- 组件化设计
+- 先做最简版 UI，不追求美化
+- 方法渲染以 pageConfig 为准，不要写死业务逻辑
+
+请优先输出：
+- 页面结构
+- 组件结构
+- pageConfig 对应的渲染规则
+- 表单与方法调用方式
