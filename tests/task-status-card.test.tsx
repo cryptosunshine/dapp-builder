@@ -26,4 +26,12 @@ describe('TaskStatusCard', () => {
 
     expect(link).toHaveAttribute('href', '/app/task-42');
   });
+
+  test('renders a raw task json link for quick API inspection', () => {
+    render(<TaskStatusCard task={task} />);
+
+    const link = screen.getByRole('link', { name: /open task json/i });
+
+    expect(link).toHaveAttribute('href', '/api/tasks/task-42');
+  });
 });
