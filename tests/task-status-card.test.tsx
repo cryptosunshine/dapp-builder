@@ -27,11 +27,9 @@ describe('TaskStatusCard', () => {
     expect(link).toHaveAttribute('href', '/app/task-42');
   });
 
-  test('renders a raw task json link for quick API inspection', () => {
+  test('does not render a raw task json link that could expose sensitive fields', () => {
     render(<TaskStatusCard task={task} />);
 
-    const link = screen.getByRole('link', { name: /open task json/i });
-
-    expect(link).toHaveAttribute('href', '/api/tasks/task-42');
+    expect(screen.queryByRole('link', { name: /open task json/i })).not.toBeInTheDocument();
   });
 });

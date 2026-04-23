@@ -8,6 +8,7 @@ import {
   builderTaskInputSchema,
   builderTaskResultSchema,
   builderTaskSchema,
+  sanitizeTaskInput,
 } from '../../shared/schema.js';
 
 interface TaskStoreOptions {
@@ -27,9 +28,18 @@ export function createTaskStore({ dataDir }: TaskStoreOptions) {
     await mkdir(dataDir, { recursive: true });
   };
 
+  const sanitizeTask = (task: BuilderTask): BuilderTask => ({
+    ...task,
+    ...(task.input
+      ? {
+          input: 'apiKey' in task.input ? sanitizeTaskInput(task.input) : task.input,
+        }
+      : {}),
+  });
+
   const saveTask = async (task: BuilderTask) => {
     await ensureDataDir();
-    const validated = builderTaskSchema.parse(task);
+    const validated = builderTaskSchema.parse(sanitizeTask(task));
     const persistedTaskId = validated.id ?? validated.taskId;
     if (!persistedTaskId) {
       throw new Error('Task is missing an id/taskId field.');
@@ -41,7 +51,7 @@ export function createTaskStore({ dataDir }: TaskStoreOptions) {
   const getTask = async (id: string): Promise<BuilderTask | null> => {
     try {
       const content = await readFile(taskFilePath(id), 'utf8');
-      return builderTaskSchema.parse(JSON.parse(content));
+      return builderTaskSchema.parse(sanitizeTask(builderTaskSchema.parse(JSON.parse(content))));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return null;
@@ -58,7 +68,7 @@ export function createTaskStore({ dataDir }: TaskStoreOptions) {
       status: 'queued',
       createdAt: timestamp,
       updatedAt: timestamp,
-      input: parsedInput,
+      input: sanitizeTaskInput(parsedInput),
     };
 
     return saveTask(task);
@@ -88,7 +98,7 @@ export function createTaskStore({ dataDir }: TaskStoreOptions) {
     const tasks = await Promise.all(
       files.map(async (file) => {
         const content = await readFile(join(dataDir, file), 'utf8');
-        return builderTaskSchema.parse(JSON.parse(content));
+        return builderTaskSchema.parse(sanitizeTask(builderTaskSchema.parse(JSON.parse(content))));
       }),
     );
     return tasks.sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''));
