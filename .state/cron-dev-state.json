@@ -2,7 +2,7 @@
   "active_branch": "feat/frontend-integration-polish",
   "active_pr_number": 3,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/3",
-  "current_focus": "Task 7: frontend builder + polling flow gap scan",
+  "current_focus": "Task 7: polling / task-detail UX gap scan",
   "group_goal": "Group 3: 继续向 frontend / integration / polish 推进",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [],
