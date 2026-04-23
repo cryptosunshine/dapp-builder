@@ -10,10 +10,17 @@ export function TaskStatusCard({ task }: { task: BuilderTask | null }) {
     );
   }
 
+  const previewHref = task.id ? `/app/${task.id}` : null;
+
   return (
     <div className={`status-card status-${task.status}`}>
       <h3>Task {task.id}</h3>
       <p>Status: {task.status}</p>
+      {previewHref && (
+        <p>
+          <a href={previewHref}>Open shareable preview</a>
+        </p>
+      )}
       {task.error && <p className="error-text">{task.error}</p>}
       {task.result?.analysis && (
         <div className="status-card__details">
