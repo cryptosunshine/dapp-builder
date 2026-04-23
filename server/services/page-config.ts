@@ -28,9 +28,13 @@ function pickSkill(analysis: AnalyzeContractResult): SkillName {
 
 export function buildPageConfig(analysis: AnalyzeContractResult): PageConfig {
   const skill = pickSkill(analysis);
-  const allMethods = uniqueMethods([...analysis.methods, ...analysis.dangerousMethods]);
-  const safeReadMethods = allMethods.filter((method) => method.type === 'read' && method.dangerLevel !== 'danger');
-  const actionMethods = allMethods.filter((method) => method.type === 'write' && method.dangerLevel !== 'danger');
+  const safeReadMethods = uniqueMethods(
+    analysis.readMethods ?? analysis.methods.filter((method) => method.type === 'read' && method.dangerLevel !== 'danger'),
+  );
+  const actionMethods = uniqueMethods(
+    analysis.writeMethods ?? analysis.methods.filter((method) => method.type === 'write' && method.dangerLevel !== 'danger'),
+  );
+  const safeMethods = uniqueMethods([...safeReadMethods, ...actionMethods]);
   const dangerousMethods = uniqueMethods(analysis.dangerousMethods);
 
   const sections: PageSection[] = [
@@ -46,7 +50,7 @@ export function buildPageConfig(analysis: AnalyzeContractResult): PageConfig {
   if (safeReadMethods.length > 0) {
     sections.push({
       id: 'read-data',
-      title: 'Read data',
+      title: 'Read methods',
       description: 'Safe read-only methods for inspecting contract state.',
       variant: 'read',
       methodNames: safeReadMethods.map((method) => method.name),
@@ -56,9 +60,9 @@ export function buildPageConfig(analysis: AnalyzeContractResult): PageConfig {
   if (actionMethods.length > 0) {
     sections.push({
       id: 'actions',
-      title: 'Actions',
+      title: 'Write methods',
       description: 'Primary user-facing contract interactions.',
-      variant: 'actions',
+      variant: 'write',
       methodNames: actionMethods.map((method) => method.name),
     });
   }
@@ -88,7 +92,7 @@ export function buildPageConfig(analysis: AnalyzeContractResult): PageConfig {
     skill,
     warnings: analysis.warnings,
     dangerousMethods,
-    methods: allMethods,
+    methods: safeMethods,
     sections,
   };
 }
