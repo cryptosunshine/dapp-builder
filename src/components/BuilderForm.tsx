@@ -14,7 +14,7 @@ const initialState: BuilderTaskInput = {
   apiKey: '',
 };
 
-const sampleContractAddress = '0xDEADBEEF';
+const sampleContractAddress = '0x1234567890123456789012345678901234567890';
 
 export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
   const [formState, setFormState] = useState<BuilderTaskInput>(initialState);
