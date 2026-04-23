@@ -1,95 +1,103 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import express from 'express';
+import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { AddressInfo } from 'node:net';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { afterEach, describe, expect, test, vi } from 'vitest';
-import { createTaskService } from '../server/services/task-service';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { createTaskRouter } from '../server/routes/tasks';
+import { runBuilderAgent } from '../server/services/agent.js';
 import { createTaskStore } from '../server/services/task-store';
-import type { AgentRunResult, BuilderTaskRequest } from '../shared/schema';
+import type { BuilderTaskInput } from '../shared/schema';
 
+vi.mock('../server/services/agent.js', () => ({
+  runBuilderAgent: vi.fn(),
+}));
+
+const mockedRunBuilderAgent = vi.mocked(runBuilderAgent);
 const cleanupPaths: string[] = [];
 
-afterEach(async () => {
-  await Promise.all(cleanupPaths.splice(0).map((path) => rm(path, { recursive: true, force: true })));
-});
-
-const request: BuilderTaskRequest = {
+const request: BuilderTaskInput = {
   contractAddress: '0x1234567890123456789012345678901234567890',
-  chainId: 71,
+  chain: 'conflux-espace-testnet',
   skill: 'claim-page',
   model: 'gpt-5.4',
   apiKey: 'secret-api-key',
 };
 
-const agentResult: AgentRunResult = {
-  summary: 'Claim page ready.',
-  contractAnalysis: {
-    contractType: 'claim',
-    recommendedSkill: 'claim-page',
-    readMethods: [],
-    writeMethods: [],
-    dangerousMethods: [{
-      name: 'setMerkleRoot',
-      label: 'Set Merkle Root',
-      type: 'write',
-      dangerLevel: 'danger',
-      stateMutability: 'nonpayable',
-      inputs: [{ name: 'root', type: 'bytes32' }],
-      outputs: [],
-      description: 'Administrative method.',
-    }],
-    warnings: ['Admin method detected.'],
-  },
-  pageConfig: {
-    chainId: 71,
-    rpcUrl: 'https://evmtestnet.confluxrpc.com',
-    contractAddress: request.contractAddress,
-    skill: 'claim-page',
-    title: 'Mock Claim Page',
-    sections: [],
-    methods: [],
-    warnings: ['Admin method detected.'],
-  },
-  status: 'success',
-  error: '',
-};
+beforeEach(() => {
+  mockedRunBuilderAgent.mockReset();
+});
 
-describe('createTaskService', () => {
-  test('creates pending tasks and stores success output after staged execution', async () => {
-    const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-task-service-'));
+afterEach(async () => {
+  await Promise.all(cleanupPaths.splice(0).map((path) => rm(path, { recursive: true, force: true })));
+});
+
+async function createServer(dataDir: string) {
+  const app = express();
+  const taskStore = createTaskStore({ dataDir });
+
+  app.use(express.json({ limit: '1mb' }));
+  app.use('/api/tasks', createTaskRouter({ taskStore }));
+  app.use((error: Error, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    response.status(500).json({ message: error.message || 'Internal server error' });
+  });
+
+  return app.listen(0);
+}
+
+async function waitForTask(baseUrl: string, taskId: string) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const response = await fetch(`${baseUrl}/api/tasks/${taskId}`);
+    const payload = await response.json();
+    if (payload.status === 'completed' || payload.status === 'failed') {
+      return payload;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+
+  throw new Error('Timed out waiting for task completion.');
+}
+
+describe('task execution failure handling', () => {
+  test('stores failed task output without persisting or returning the apiKey', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-task-failure-'));
     cleanupPaths.push(dataDir);
+    mockedRunBuilderAgent.mockRejectedValue(new Error('agent exploded'));
 
-    const taskStore = createTaskStore({ dataDir });
-    const agentRunner = vi.fn(async (_request, context) => {
-      await context.onProgress('fetching_abi');
-      await context.onProgress('analyzing_contract');
-      await context.onProgress('generating_page_config');
-      return agentResult;
-    });
+    const server = await createServer(dataDir);
 
-    const taskService = createTaskService({ taskStore, agentRunner });
-    const createdTask = await taskService.createTask(request);
+    try {
+      const address = server.address() as AddressInfo;
+      const baseUrl = `http://127.0.0.1:${address.port}`;
 
-    expect(createdTask).toEqual({
-      taskId: expect.any(String),
-      status: 'pending',
-    });
+      const createResponse = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+      const createdTask = await createResponse.json();
 
-    await taskService.runTask(createdTask.taskId, request);
+      expect(createResponse.status).toBe(202);
+      expect(createdTask.input).not.toHaveProperty('apiKey');
+      expect(JSON.stringify(createdTask)).not.toContain('secret-api-key');
 
-    const detail = await taskService.getTask(createdTask.taskId);
-    expect(detail).toMatchObject({
-      taskId: createdTask.taskId,
-      status: 'success',
-      progress: 'completed',
-      summary: 'Claim page ready.',
-      pageConfig: {
-        title: 'Mock Claim Page',
-      },
-      error: '',
-    });
-    expect(agentRunner).toHaveBeenCalledWith(
-      expect.objectContaining({ apiKey: 'secret-api-key' }),
-      expect.objectContaining({ onProgress: expect.any(Function) }),
-    );
+      const detail = await waitForTask(baseUrl, createdTask.id);
+      const rawFile = await readFile(join(dataDir, `${createdTask.id}.json`), 'utf8');
+
+      expect(detail).toMatchObject({
+        id: createdTask.id,
+        status: 'failed',
+        error: 'agent exploded',
+      });
+      expect(JSON.stringify(detail)).not.toContain('secret-api-key');
+      expect(rawFile).not.toContain('secret-api-key');
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    }
   });
 });

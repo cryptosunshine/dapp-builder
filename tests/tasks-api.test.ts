@@ -1,37 +1,34 @@
+import express from 'express';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { AddressInfo } from 'node:net';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { afterEach, describe, expect, test } from 'vitest';
-import { createApp } from '../server/app';
-import { createTaskService } from '../server/services/task-service';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { createTaskRouter } from '../server/routes/tasks';
+import { runBuilderAgent } from '../server/services/agent.js';
 import { createTaskStore } from '../server/services/task-store';
-import type { AgentRunResult, BuilderTaskRequest } from '../shared/schema';
+import type { BuilderTaskInput, BuilderTaskResult } from '../shared/schema';
 
+vi.mock('../server/services/agent.js', () => ({
+  runBuilderAgent: vi.fn(),
+}));
+
+const mockedRunBuilderAgent = vi.mocked(runBuilderAgent);
 const cleanupPaths: string[] = [];
 
-afterEach(async () => {
-  await Promise.all(cleanupPaths.splice(0).map((path) => rm(path, { recursive: true, force: true })));
-});
-
-const request: BuilderTaskRequest = {
+const request: BuilderTaskInput = {
   contractAddress: '0x1234567890123456789012345678901234567890',
-  chainId: 71,
+  chain: 'conflux-espace-testnet',
   skill: 'token-dashboard',
   model: 'gpt-5.4',
   apiKey: 'secret-api-key',
 };
 
-const agentResult: AgentRunResult = {
-  summary: 'Token dashboard ready.',
-  contractAnalysis: {
-    contractType: 'token',
-    recommendedSkill: 'token-dashboard',
-    readMethods: [],
-    writeMethods: [],
-    dangerousMethods: [],
-    warnings: ['Wallet connection required.'],
-  },
+const agentResult: BuilderTaskResult = {
+  warnings: ['Wallet connection required.'],
+  dangerousMethods: [],
+  methods: [],
+  sections: [],
   pageConfig: {
     chainId: 71,
     rpcUrl: 'https://evmtestnet.confluxrpc.com',
@@ -42,15 +39,40 @@ const agentResult: AgentRunResult = {
     methods: [],
     warnings: ['Wallet connection required.'],
   },
-  status: 'success',
+  analysis: {
+    contractType: 'token',
+    skillMatch: true,
+    recommendedSkills: ['token-dashboard'],
+  },
   error: '',
 };
+
+beforeEach(() => {
+  mockedRunBuilderAgent.mockReset();
+});
+
+afterEach(async () => {
+  await Promise.all(cleanupPaths.splice(0).map((path) => rm(path, { recursive: true, force: true })));
+});
+
+async function createServer(dataDir: string) {
+  const app = express();
+  const taskStore = createTaskStore({ dataDir });
+
+  app.use(express.json({ limit: '1mb' }));
+  app.use('/api/tasks', createTaskRouter({ taskStore }));
+  app.use((error: Error, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    response.status(500).json({ message: error.message || 'Internal server error' });
+  });
+
+  return app.listen(0);
+}
 
 async function waitForTask(baseUrl: string, taskId: string) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const response = await fetch(`${baseUrl}/api/tasks/${taskId}`);
     const payload = await response.json();
-    if (payload.status === 'success' || payload.status === 'failed') {
+    if (payload.status === 'completed' || payload.status === 'failed') {
       return payload;
     }
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -60,22 +82,12 @@ async function waitForTask(baseUrl: string, taskId: string) {
 }
 
 describe('tasks API', () => {
-  test('returns prompt-aligned create/detail payloads', async () => {
+  test('returns sanitized task payloads without leaking the submitted apiKey', async () => {
     const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-api-'));
     cleanupPaths.push(dataDir);
+    mockedRunBuilderAgent.mockResolvedValue(agentResult);
 
-    const taskService = createTaskService({
-      taskStore: createTaskStore({ dataDir }),
-      agentRunner: async (_request, context) => {
-        await context.onProgress('fetching_abi');
-        await context.onProgress('analyzing_contract');
-        await context.onProgress('generating_page_config');
-        return agentResult;
-      },
-    });
-
-    const app = createApp({ taskService });
-    const server = app.listen(0);
+    const server = await createServer(dataDir);
 
     try {
       const address = server.address() as AddressInfo;
@@ -89,24 +101,27 @@ describe('tasks API', () => {
       const createdTask = await createResponse.json();
 
       expect(createResponse.status).toBe(202);
-      expect(createdTask).toEqual({
-        taskId: expect.any(String),
-        status: 'pending',
-      });
+      expect(createdTask.id).toEqual(expect.any(String));
+      expect(createdTask.status).toBe('queued');
+      expect(createdTask.input).not.toHaveProperty('apiKey');
+      expect(JSON.stringify(createdTask)).not.toContain('secret-api-key');
 
-      const detail = await waitForTask(baseUrl, createdTask.taskId);
+      const detail = await waitForTask(baseUrl, createdTask.id);
+
       expect(detail).toMatchObject({
-        taskId: createdTask.taskId,
-        status: 'success',
-        progress: 'completed',
-        summary: 'Token dashboard ready.',
-        pageConfig: {
-          title: 'Mock Token Dashboard',
-          chainId: 71,
+        id: createdTask.id,
+        status: 'completed',
+        result: {
+          pageConfig: {
+            title: 'Mock Token Dashboard',
+            chainId: 71,
+          },
         },
-        error: '',
       });
       expect(JSON.stringify(detail)).not.toContain('secret-api-key');
+      expect(mockedRunBuilderAgent).toHaveBeenCalledWith(
+        expect.objectContaining({ apiKey: 'secret-api-key' }),
+      );
     } finally {
       await new Promise<void>((resolve, reject) => {
         server.close((error) => {
