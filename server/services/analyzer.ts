@@ -118,7 +118,7 @@ function detectRecommendedSkills(functionNames: string[]) {
 function determineContractType(scores: Record<'token' | 'nft' | 'claim' | 'staking', number>): AnalyzeContractResult['contractType'] {
   const entries = Object.entries(scores) as Array<[AnalyzeContractResult['contractType'], number]>;
   const [winner, score] = entries.sort((left, right) => right[1] - left[1])[0];
-  return score > 0 ? winner : 'generic';
+  return score > 0 ? winner : 'unknown';
 }
 
 function toPageMethod(entry: AbiEntry): PageMethod | null {
@@ -154,7 +154,10 @@ export function analyzeContract(input: AnalyzeContractInput): AnalyzeContractRes
   const functionNames = methods.map((method) => method.name.toLowerCase());
   const { recommendations, scores } = detectRecommendedSkills(functionNames);
   const dangerousMethods = methods.filter((method) => method.dangerLevel === 'danger');
+  const readMethods = methods.filter((method) => method.type === 'read');
+  const writeMethods = methods.filter((method) => method.type === 'write' && method.dangerLevel !== 'danger');
   const contractType = determineContractType(scores);
+  const recommendedSkill = recommendations[0] ?? 'unknown';
   const skillMatch = recommendations.includes(input.requestedSkill);
   const warnings: string[] = [];
 
@@ -170,7 +173,7 @@ export function analyzeContract(input: AnalyzeContractInput): AnalyzeContractRes
     warnings.push('Dangerous or administrative methods were detected. Keep them out of the primary user flow.');
   }
 
-  if (contractType === 'generic') {
+  if (contractType === 'unknown') {
     warnings.push('This contract did not strongly match a supported MVP skill. Preview quality may be limited.');
   }
 
@@ -180,10 +183,13 @@ export function analyzeContract(input: AnalyzeContractInput): AnalyzeContractRes
     chain: input.chain,
     requestedSkill: input.requestedSkill,
     contractType,
+    recommendedSkill,
     skillMatch,
     recommendedSkills: recommendations,
     warnings,
     methods,
+    readMethods,
+    writeMethods,
     dangerousMethods,
   };
 }
