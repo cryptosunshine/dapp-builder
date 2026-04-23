@@ -1,9 +1,9 @@
 {
-  "active_branch": "feat/task56-gap-closure",
-  "active_pr_number": null,
-  "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/new/feat/task56-gap-closure",
-  "current_focus": "Task 6: malformed LLM output fallback coverage",
-  "group_goal": "Group 2: 基于计划文档继续完成 Task 5/6 剩余缺口",
+  "active_branch": "feat/frontend-integration-polish",
+  "active_pr_number": 3,
+  "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/3",
+  "current_focus": "Task 7: frontend builder + polling flow gap scan",
+  "group_goal": "Group 3: 继续向 frontend / integration / polish 推进",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [],
   "handled_review_comment_ids": [],
@@ -12,6 +12,11 @@
       "name": "Group 1: analyzer + page-config blockers",
       "status": "already_on_master",
       "notes": "Verified analyzer/page-config targeted tests, full npm test, and npm run build all pass on master-aligned branch during cron run on 2026-04-23."
+    },
+    {
+      "name": "Group 2: 基于计划文档继续完成 Task 5/6 剩余缺口",
+      "status": "merged_to_master",
+      "notes": "Merged feat/task56-gap-closure into master after fixing missing-ABI errors and preserving deterministic warnings/sections against unsafe LLM overrides; npm test and npm run build both passed on 2026-04-23."
     }
   ]
 }
