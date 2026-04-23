@@ -30,6 +30,34 @@ function mergeMethods(baseMethods: PageConfig['methods'], incomingMethods?: Page
   return [...byName.values()];
 }
 
+function mergeWarnings(baseWarnings: string[], incomingWarnings?: string[]) {
+  if (!incomingWarnings || incomingWarnings.length === 0) {
+    return baseWarnings;
+  }
+
+  return [...new Set([...baseWarnings, ...incomingWarnings])];
+}
+
+function mergeSections(baseSections: PageConfig['sections'], incomingSections?: PageConfig['sections']) {
+  if (!incomingSections || incomingSections.length === 0) {
+    return baseSections;
+  }
+
+  const incomingById = new Map(incomingSections.map((section) => [section.id, section]));
+  return baseSections.map((section) => {
+    const incoming = incomingById.get(section.id);
+    if (!incoming) {
+      return section;
+    }
+
+    return {
+      ...section,
+      ...(incoming.title ? { title: incoming.title } : {}),
+      ...(incoming.description ? { description: incoming.description } : {}),
+    };
+  });
+}
+
 export async function enhancePageConfigWithLlm({ apiKey, model, analysis, pageConfig }: LlmEnhancementInput) {
   if (!apiKey || !model) {
     return null;
@@ -81,8 +109,8 @@ export async function enhancePageConfigWithLlm({ apiKey, model, analysis, pageCo
       ...pageConfig,
       ...(patch.title ? { title: patch.title } : {}),
       ...(patch.description ? { description: patch.description } : {}),
-      ...(patch.warnings ? { warnings: patch.warnings } : {}),
-      ...(patch.sections ? { sections: patch.sections } : {}),
+      warnings: mergeWarnings(pageConfig.warnings, patch.warnings),
+      sections: mergeSections(pageConfig.sections, patch.sections),
       methods: mergeMethods(pageConfig.methods, patch.methods),
       dangerousMethods: mergeMethods(pageConfig.dangerousMethods, patch.dangerousMethods),
     };
