@@ -14,6 +14,8 @@ const initialState: BuilderTaskInput = {
   apiKey: '',
 };
 
+const sampleContractAddress = '0x1234567890123456789012345678901234567890';
+
 export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
   const [formState, setFormState] = useState<BuilderTaskInput>(initialState);
 
@@ -80,9 +82,19 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
         </label>
       </div>
 
-      <button type="submit" className="primary-button" disabled={isSubmitting}>
-        {isSubmitting ? 'Creating task...' : 'Generate dApp preview'}
-      </button>
+      <div className="button-row">
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => setFormState((current) => ({ ...current, contractAddress: sampleContractAddress }))}
+        >
+          Use sample contract
+        </button>
+
+        <button type="submit" className="primary-button" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating task...' : 'Generate dApp preview'}
+        </button>
+      </div>
     </form>
   );
 }

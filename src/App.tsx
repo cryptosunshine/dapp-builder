@@ -174,6 +174,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<BuilderHome />} />
       <Route path="/tasks/:taskId" element={<TaskPreviewRoute />} />
+      <Route path="/app/:taskId" element={<TaskPreviewRoute />} />
     </Routes>
   );
 }
