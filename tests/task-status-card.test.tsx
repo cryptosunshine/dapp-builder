@@ -27,6 +27,21 @@ describe('TaskStatusCard', () => {
     expect(link).toHaveAttribute('href', '/app/task-42');
   });
 
+  test('renders task progress and summary details for in-flight tasks', () => {
+    render(
+      <TaskStatusCard
+        task={{
+          ...task,
+          progress: 'fetching_abi',
+          summary: 'Fetching contract ABI from ConfluxScan.',
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Stage: fetching_abi')).toBeInTheDocument();
+    expect(screen.getByText('Fetching contract ABI from ConfluxScan.')).toBeInTheDocument();
+  });
+
   test('does not render a raw task json link that could expose sensitive fields', () => {
     render(<TaskStatusCard task={task} />);
 

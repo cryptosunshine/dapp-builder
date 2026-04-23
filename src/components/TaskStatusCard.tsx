@@ -16,6 +16,8 @@ export function TaskStatusCard({ task }: { task: BuilderTask | null }) {
     <div className={`status-card status-${task.status}`}>
       <h3>Task {task.id}</h3>
       <p>Status: {task.status}</p>
+      {task.progress && <p>Stage: {task.progress}</p>}
+      {task.summary && <p>{task.summary}</p>}
       {previewHref && (
         <p>
           <a href={previewHref}>Open shareable preview</a>
