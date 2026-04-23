@@ -22,10 +22,21 @@ const ABI_FIELDS = [
 ];
 
 function normalizeAbi(rawAbi: unknown): AbiEntry[] {
-  const parsed = typeof rawAbi === 'string' ? JSON.parse(rawAbi) : rawAbi;
-  if (!Array.isArray(parsed)) {
-    throw new Error('Contract ABI is not an array.');
+  if (rawAbi == null || rawAbi === '') {
+    throw new Error('Contract ABI is unavailable.');
   }
+
+  let parsed: unknown;
+  try {
+    parsed = typeof rawAbi === 'string' ? JSON.parse(rawAbi) : rawAbi;
+  } catch {
+    throw new Error('Contract ABI is unavailable.');
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error('Contract ABI is unavailable.');
+  }
+
   return parsed.map((entry) => abiEntrySchema.parse(entry));
 }
 
