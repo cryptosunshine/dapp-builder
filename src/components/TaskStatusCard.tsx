@@ -10,7 +10,7 @@ export function TaskStatusCard({ task }: { task: BuilderTask | null }) {
     );
   }
 
-  const previewHref = task.id ? `/app/${task.id}` : null;
+  const previewHref = task.id && task.status !== 'failed' ? `/app/${task.id}` : null;
 
   return (
     <div className={`status-card status-${task.status}`}>
