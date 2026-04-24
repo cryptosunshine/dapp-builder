@@ -23,6 +23,11 @@ export function TaskStatusCard({ task }: { task: BuilderTask | null }) {
           <a href={previewHref}>Open shareable preview</a>
         </p>
       )}
+      {task.status === 'failed' && (
+        <p>
+          <a href="/">Start a new task</a>
+        </p>
+      )}
       {task.error && <p className="error-text">{task.error}</p>}
       {task.result?.analysis && (
         <div className="status-card__details">

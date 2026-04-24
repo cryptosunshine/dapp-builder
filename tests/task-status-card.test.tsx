@@ -47,4 +47,21 @@ describe('TaskStatusCard', () => {
 
     expect(screen.queryByRole('link', { name: /open task json/i })).not.toBeInTheDocument();
   });
+
+  test('renders a restart link for failed tasks', () => {
+    render(
+      <TaskStatusCard
+        task={{
+          ...task,
+          status: 'failed',
+          error: 'ABI lookup failed.',
+        }}
+      />,
+    );
+
+    const restartLink = screen.getByRole('link', { name: /start a new task/i });
+
+    expect(restartLink).toHaveAttribute('href', '/');
+    expect(screen.queryByRole('link', { name: /open shareable preview/i })).not.toBeInTheDocument();
+  });
 });
