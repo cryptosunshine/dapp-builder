@@ -1,9 +1,9 @@
 {
-  "active_branch": "feat/group6-form-ux",
-  "active_pr_number": 6,
-  "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/6",
-  "current_focus": "Group 6: shipped deterministic-mode API key helper copy with concise accessible label. Next: run full suite and merge PR #6 if clean, then start final core generation pipeline group.",
-  "group_goal": "Group 6: form UX polish and navigation refinements",
+  "active_branch": "feat/group7-agent-generation-pipeline",
+  "active_pr_number": 7,
+  "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/7",
+  "current_focus": "Group 7: PR #7 opened with real hermes-agent generation pipeline. Next: merge after verification/review; remaining product work appears complete except non-blocking polish ideas.",
+  "group_goal": "Group 7: real agent-backed dapp/page generation pipeline",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [
     "PRR_kwDOSIgRD874joNq",
@@ -39,6 +39,11 @@
       "name": "Group 5: method navigation/filter polish and result-panel UX improvements",
       "status": "merged_to_master",
       "notes": "Merged via PR #5 after clean review on latest commit. Included method count badges, write/danger filters, empty-output fallback, retry button for failed calls. All 52 tests + build pass on 2026-04-24."
+    },
+    {
+      "name": "Group 6: form UX polish and navigation refinements",
+      "status": "merged_to_master",
+      "notes": "Merged via PR #6. Included invalid-address blocking, clear-form error reset, chain metadata tooltip, deterministic API key helper, and passing 60-test suite + build on 2026-04-24."
     }
   ]
 }
