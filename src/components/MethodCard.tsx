@@ -84,7 +84,11 @@ export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProp
               {copied ? 'Copied!' : 'Copy result'}
             </button>
           </div>
-          {activeResult.data !== undefined && <pre>{JSON.stringify(activeResult.data, null, 2)}</pre>}
+          {activeResult.data !== undefined ? (
+            <pre>{JSON.stringify(activeResult.data, null, 2)}</pre>
+          ) : activeResult.status === 'success' ? (
+            <p>No structured output was returned for this call.</p>
+          ) : null}
         </div>
       )}
     </article>

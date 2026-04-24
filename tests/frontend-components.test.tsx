@@ -242,6 +242,17 @@ describe('MethodCard', () => {
     expect(copyBtn).toBeInTheDocument();
   });
 
+  test('shows a no structured output hint when success result has no data payload', () => {
+    const activeResult: MethodRunResult = {
+      methodName: 'transfer',
+      status: 'success',
+      message: 'Transaction confirmed: 0xabc123',
+    };
+    render(<MethodCard method={writeMethod} onRunMethod={vi.fn()} activeResult={activeResult} />);
+
+    expect(screen.getByText(/no structured output was returned for this call/i)).toBeInTheDocument();
+  });
+
   test('copy button copies data text to clipboard', async () => {
     // Mock clipboard API
     const writeTextMock = vi.fn();
