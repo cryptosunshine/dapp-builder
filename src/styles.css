@@ -94,6 +94,12 @@ select {
   grid-column: 1 / -1;
 }
 
+.field-hint {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+
 input,
 select {
   width: 100%;

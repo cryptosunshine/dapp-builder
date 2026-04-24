@@ -46,6 +46,20 @@ describe('BuilderForm', () => {
     expect(apiKeyInput).toHaveValue('');
   });
 
+  test('shows a description for the currently selected skill', async () => {
+    const user = userEvent.setup();
+
+    render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
+
+    // Default skill is token-dashboard
+    expect(screen.getByText(/View token balances/i)).toBeInTheDocument();
+
+    // Switching skill updates the description
+    const skillSelect = screen.getByLabelText(/skill/i);
+    await user.selectOptions(skillSelect, 'nft-mint-page');
+    expect(screen.getByText(/Mint NFTs/i)).toBeInTheDocument();
+  });
+
   test('allows submitting without an API key for deterministic-only runs', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();

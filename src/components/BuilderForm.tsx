@@ -16,6 +16,13 @@ const initialState: BuilderTaskInput = {
 
 const sampleContractAddress = '0x1234567890123456789012345678901234567890';
 
+const skillDescriptions: Record<BuilderTaskInput['skill'], string> = {
+  'token-dashboard': 'View token balances, transfer tokens, approve spending (ERC20)',
+  'nft-mint-page': 'Mint NFTs, check ownership, view metadata',
+  'claim-page': 'Claim tokens and check claimable amounts',
+  'staking-page': 'Stake/unstake tokens and track your rewards',
+};
+
 export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
   const [formState, setFormState] = useState<BuilderTaskInput>(initialState);
 
@@ -59,6 +66,7 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
             <option value="claim-page">claim-page</option>
             <option value="staking-page">staking-page</option>
           </select>
+          <span className="field-hint">{skillDescriptions[formState.skill]}</span>
         </label>
 
         <label className="field">
