@@ -2,10 +2,10 @@
   "active_branch": "feat/group6-form-ux",
   "active_pr_number": 6,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/6",
-  "current_focus": "Group 6: added contract address validation hint. Next: add a tooltip on chain select showing chain metadata (chainId, rpcUrl, currency) or add a hint dispelling 'address too short' during typing.",
+  "current_focus": "Group 6: added client-side validation blocking submission on invalid contract address, addressing PR review feedback. Next: add a tooltip on chain select showing chain metadata (chainId, rpcUrl, currency) or add a hint dispelling 'address too short' during typing.",
   "group_goal": "Group 6: form UX polish and navigation refinements",
   "handled_issue_comment_ids": [],
-  "handled_review_ids": ["PRR_kwDOSIgRD874joNq", "PRR_kwDOSIgRD874lAxx"],
+  "handled_review_ids": ["PRR_kwDOSIgRD874joNq", "PRR_kwDOSIgRD874lAxx", "PRR_kwDOSIgRD874llcM"],
   "handled_review_comment_ids": [],
   "merged_groups": [
     {
