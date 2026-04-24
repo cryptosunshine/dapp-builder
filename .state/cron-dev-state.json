@@ -2,7 +2,7 @@
   "active_branch": "feat/frontend-integration-polish",
   "active_pr_number": 3,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/3",
-  "current_focus": "Task 7 shipped: failed-task / error-state task-detail UX; next slice pending selection",
+  "current_focus": "Task 8: frontend-preview edge cases shipped (empty config, danger zone, empty desc); next: continue Task 8 read/write method interaction or Task 9 docs polish",
   "group_goal": "Group 3: 继续向 frontend / integration / polish 推进",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [],
