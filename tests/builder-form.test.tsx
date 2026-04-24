@@ -19,6 +19,33 @@ describe('BuilderForm', () => {
     expect(() => builderTaskInputSchema.shape.contractAddress.parse(addressInput.value)).not.toThrow();
   });
 
+  test('resets all fields to initial state when clear form button is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
+
+    // Fill in some values different from defaults
+    await user.clear(screen.getByLabelText(/contract address/i));
+    await user.type(screen.getByLabelText(/contract address/i), '0x1234567890123456789012345678901234567890');
+    await user.clear(screen.getByLabelText(/model/i));
+    await user.type(screen.getByLabelText(/model/i), 'claude-4');
+    await user.clear(screen.getByLabelText(/api key/i));
+    await user.type(screen.getByLabelText(/api key/i), 'sk-test-key');
+
+    // Click clear form
+    await user.click(screen.getByRole('button', { name: /clear form/i }));
+
+    // Fields should be back to initial defaults
+    const addressInput = screen.getByLabelText(/contract address/i) as HTMLInputElement;
+    expect(addressInput).toHaveValue('');
+
+    const modelInput = screen.getByLabelText(/model/i) as HTMLInputElement;
+    expect(modelInput).toHaveValue('gpt-5.4');
+
+    const apiKeyInput = screen.getByLabelText(/api key/i) as HTMLInputElement;
+    expect(apiKeyInput).toHaveValue('');
+  });
+
   test('allows submitting without an API key for deterministic-only runs', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();

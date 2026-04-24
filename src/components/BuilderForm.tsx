@@ -90,6 +90,14 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
           Use sample contract
         </button>
 
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => setFormState(structuredClone(initialState))}
+        >
+          Clear form
+        </button>
+
         <button type="submit" className="primary-button" disabled={isSubmitting}>
           {isSubmitting ? 'Creating task...' : 'Generate dApp preview'}
         </button>
