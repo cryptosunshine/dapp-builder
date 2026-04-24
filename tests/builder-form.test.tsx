@@ -27,8 +27,8 @@ describe('BuilderForm', () => {
     // Fill in some values different from defaults
     await user.clear(screen.getByLabelText(/contract address/i));
     await user.type(screen.getByLabelText(/contract address/i), '0x1234567890123456789012345678901234567890');
-    await user.clear(screen.getByLabelText(/model/i));
-    await user.type(screen.getByLabelText(/model/i), 'claude-4');
+    await user.clear(screen.getByLabelText(/^model$/i));
+    await user.type(screen.getByLabelText(/^model$/i), 'claude-4');
     await user.clear(screen.getByLabelText(/api key/i));
     await user.type(screen.getByLabelText(/api key/i), 'sk-test-key');
 
@@ -39,7 +39,7 @@ describe('BuilderForm', () => {
     const addressInput = screen.getByLabelText(/contract address/i) as HTMLInputElement;
     expect(addressInput).toHaveValue('');
 
-    const modelInput = screen.getByLabelText(/model/i) as HTMLInputElement;
+    const modelInput = screen.getByLabelText(/^model$/i) as HTMLInputElement;
     expect(modelInput).toHaveValue('gpt-5.4');
 
     const apiKeyInput = screen.getByLabelText(/api key/i) as HTMLInputElement;
@@ -58,6 +58,14 @@ describe('BuilderForm', () => {
     const skillSelect = screen.getByLabelText(/skill/i);
     await user.selectOptions(skillSelect, 'nft-mint-page');
     expect(screen.getByText(/Mint NFTs/i)).toBeInTheDocument();
+  });
+
+  test('shows deterministic mode helper copy when API key is blank without expanding the input name', () => {
+    render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
+
+    expect(screen.getByText(/Blank API key uses deterministic ABI-only generation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Model is only used to polish labels when an API key is provided/i)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /^api key$/i })).toBeInTheDocument();
   });
 
   test('allows submitting without an API key for deterministic-only runs', async () => {

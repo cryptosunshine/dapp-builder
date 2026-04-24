@@ -122,14 +122,19 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
           />
         </label>
 
-        <label className="field field-full">
-          <span>API key</span>
+        <div className="field field-full">
+          <label htmlFor="api-key-input">API key</label>
           <input
+            id="api-key-input"
+            aria-describedby="api-key-hint"
             value={formState.apiKey}
             onChange={(event) => setFormState((current) => ({ ...current, apiKey: event.target.value }))}
             placeholder="Optional for now, but wired for future prompt enhancement"
           />
-        </label>
+          <span id="api-key-hint" className="field-hint">
+            Blank API key uses deterministic ABI-only generation. Model is only used to polish labels when an API key is provided.
+          </span>
+        </div>
       </div>
 
       <div className="button-row">
