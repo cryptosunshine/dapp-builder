@@ -91,6 +91,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
             <button
               key={filterButton.value}
               type="button"
+              aria-pressed={methodFilter === filterButton.value}
               className={methodFilter === filterButton.value ? 'primary-button' : 'secondary-button'}
               onClick={() => setMethodFilter(filterButton.value)}
             >

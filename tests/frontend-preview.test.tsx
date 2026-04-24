@@ -220,6 +220,41 @@ describe('PreviewPage', () => {
     expect(screen.getByRole('button', { name: /balance of/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/set merkle root/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /write methods/i }));
+
+    expect(screen.getByRole('button', { name: /claim/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /balance of/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /run dangerous method/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /danger methods/i }));
+
+    expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /balance of/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /run dangerous method/i })).toBeInTheDocument();
+  });
+
+  test('marks the active filter button with aria-pressed', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    const allButton = screen.getByRole('button', { name: /all methods/i });
+    const dangerButton = screen.getByRole('button', { name: /danger methods/i });
+
+    expect(allButton).toHaveAttribute('aria-pressed', 'true');
+    expect(dangerButton).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(dangerButton);
+
+    expect(dangerButton).toHaveAttribute('aria-pressed', 'true');
+    expect(allButton).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('shows method count badges on filter buttons', () => {

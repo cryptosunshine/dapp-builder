@@ -199,3 +199,18 @@ Expected end state:
 - user can submit a testnet contract + skill request
 - backend returns a stored task result with pageConfig
 - frontend renders a usable interactive dApp preview from pageConfig
+
+---
+
+## Post-MVP / next-group backlog
+
+### Future item: make AI generate more of the actual dApp page structure
+Objective: move beyond a deterministic template + copy polish model so the generated page feels more genuinely AI-designed.
+
+Target direction:
+- let AI propose section layout, grouping, and ordering
+- let AI influence hero copy, CTA framing, empty states, and panel structure
+- keep deterministic ABI analysis as the safety boundary for methods, risk levels, and allowed interaction surfaces
+- preserve fallback to deterministic pageConfig if AI output is missing, malformed, or unsafe
+
+This should be treated as a future planning item for a later group, not as already completed behavior in the current MVP.
