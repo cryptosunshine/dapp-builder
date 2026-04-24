@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { AbiParameter } from '../../shared/schema';
 import type { MethodRunResult, PageMethod } from '../types';
 
@@ -12,8 +12,16 @@ function getInputKey(input: AbiParameter, index: number) {
   return input.name?.trim() || `arg${index}`;
 }
 
+function getResultText(result: MethodRunResult): string {
+  const parts: string[] = [];
+  if (result.message) parts.push(result.message);
+  if (result.data !== undefined) parts.push(JSON.stringify(result.data, null, 2));
+  return parts.join('\n');
+}
+
 export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProps) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [copied, setCopied] = useState(false);
   const isActiveMethod = activeResult?.methodName === method.name;
   const buttonLabel = useMemo(() => {
     if (method.dangerLevel === 'danger') {
@@ -21,6 +29,18 @@ export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProp
     }
     return method.label || method.name;
   }, [method.dangerLevel, method.label, method.name]);
+
+  const handleCopy = useCallback(async () => {
+    if (!activeResult) return;
+    const text = getResultText(activeResult);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API not available — silently ignore
+    }
+  }, [activeResult]);
 
   return (
     <article className={`method-card danger-${method.dangerLevel}`}>
@@ -58,7 +78,12 @@ export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProp
 
       {isActiveMethod && (
         <div className={`result-panel status-${activeResult.status}`}>
-          {activeResult.message && <div>{activeResult.message}</div>}
+          <div className="result-panel__header">
+            <span>{activeResult.message}</span>
+            <button type="button" className="copy-button" onClick={handleCopy} title="Copy result">
+              {copied ? 'Copied!' : 'Copy result'}
+            </button>
+          </div>
           {activeResult.data !== undefined && <pre>{JSON.stringify(activeResult.data, null, 2)}</pre>}
         </div>
       )}

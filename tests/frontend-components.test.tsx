@@ -218,4 +218,72 @@ describe('MethodCard', () => {
     const article = container.querySelector('.method-card');
     expect(article?.className).toContain('danger-danger');
   });
+
+  test('shows copy button in result panel when data is present', () => {
+    const activeResult: MethodRunResult = {
+      methodName: 'balanceOf',
+      status: 'success',
+      message: 'Call succeeded',
+      data: { value: '100' },
+    };
+    render(<MethodCard method={readMethod} onRunMethod={vi.fn()} activeResult={activeResult} />);
+    const copyBtn = screen.getByRole('button', { name: /copy result/i });
+    expect(copyBtn).toBeInTheDocument();
+  });
+
+  test('shows copy button in result panel when only message is present', () => {
+    const activeResult: MethodRunResult = {
+      methodName: 'transfer',
+      status: 'success',
+      message: 'Transaction confirmed: 0xabc123',
+    };
+    render(<MethodCard method={writeMethod} onRunMethod={vi.fn()} activeResult={activeResult} />);
+    const copyBtn = screen.getByRole('button', { name: /copy result/i });
+    expect(copyBtn).toBeInTheDocument();
+  });
+
+  test('copy button copies data text to clipboard', async () => {
+    // Mock clipboard API
+    const writeTextMock = vi.fn();
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock },
+    });
+
+    const activeResult: MethodRunResult = {
+      methodName: 'balanceOf',
+      status: 'success',
+      message: 'Call succeeded',
+      data: { value: '100' },
+    };
+    render(<MethodCard method={readMethod} onRunMethod={vi.fn()} activeResult={activeResult} />);
+    const copyBtn = screen.getByRole('button', { name: /copy result/i });
+    fireEvent.click(copyBtn);
+    expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('100'));
+  });
+
+  test('copy button shows copied feedback temporarily', async () => {
+    Object.assign(navigator, {
+      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+
+    const activeResult: MethodRunResult = {
+      methodName: 'balanceOf',
+      status: 'success',
+      message: 'Result ready',
+      data: '0xdeadbeef',
+    };
+    render(<MethodCard method={readMethod} onRunMethod={vi.fn()} activeResult={activeResult} />);
+    const copyBtn = screen.getByRole('button', { name: /copy result/i });
+    fireEvent.click(copyBtn);
+
+    // Wait for the async clipboard write + React state update to complete
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: /copied/i })).toBeInTheDocument();
+    });
+
+    // Wait for the 1500ms timeout to revert the button text
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: /copy result/i })).toBeInTheDocument();
+    }, { timeout: 3000 });
+  });
 });
