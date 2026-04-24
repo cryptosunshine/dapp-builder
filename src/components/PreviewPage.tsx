@@ -35,6 +35,14 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
     });
   }
 
+  const methodCounts = useMemo(() => {
+    const all = methodMap.size;
+    const read = [...methodMap.values()].filter((m) => m.type === 'read').length;
+    const write = [...methodMap.values()].filter((m) => m.type === 'write').length;
+    const danger = [...methodMap.values()].filter((m) => m.dangerLevel === 'danger').length;
+    return { all, read, write, danger };
+  }, [methodMap]);
+
   const filteredMethodMap = useMemo(() => {
     return new Map(
       [...methodMap.entries()].filter(([, method]) => {
@@ -46,10 +54,10 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
   }, [methodFilter, methodMap]);
 
   const filterButtons = [
-    { value: 'all' as const, label: 'All methods' },
-    { value: 'read' as const, label: 'Read methods' },
-    { value: 'write' as const, label: 'Write methods' },
-    { value: 'danger' as const, label: 'Danger methods' },
+    { value: 'all' as const, label: `All methods (${methodCounts.all})` },
+    { value: 'read' as const, label: `Read methods (${methodCounts.read})` },
+    { value: 'write' as const, label: `Write methods (${methodCounts.write})` },
+    { value: 'danger' as const, label: `Danger methods (${methodCounts.danger})` },
   ];
 
   return (

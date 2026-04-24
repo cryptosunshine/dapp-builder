@@ -222,6 +222,24 @@ describe('PreviewPage', () => {
     expect(screen.queryByText(/set merkle root/i)).not.toBeInTheDocument();
   });
 
+  test('shows method count badges on filter buttons', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    // The test data has: 1 danger (setMerkleRoot), 2 write (claim + setMerkleRoot), 1 read (balanceOf) = 3 total
+    expect(screen.getByRole('button', { name: /all methods.*3/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /read methods.*1/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /write methods.*2/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /danger methods.*1/i })).toBeInTheDocument();
+  });
+
   test('does not render empty description paragraph when description is empty string', () => {
     const taskEmptyDesc: BuilderTask = {
       id: 'task-3',
