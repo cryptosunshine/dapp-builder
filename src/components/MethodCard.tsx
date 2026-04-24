@@ -80,9 +80,16 @@ export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProp
         <div className={`result-panel status-${activeResult.status}`}>
           <div className="result-panel__header">
             <span>{activeResult.message}</span>
-            <button type="button" className="copy-button" onClick={handleCopy} title="Copy result">
-              {copied ? 'Copied!' : 'Copy result'}
-            </button>
+            <div className="result-panel__actions">
+              {activeResult.status === 'error' && (
+                <button type="button" className="retry-button" onClick={() => void onRunMethod(method, formValues)} title="Retry method call">
+                  Retry
+                </button>
+              )}
+              <button type="button" className="copy-button" onClick={handleCopy} title="Copy result">
+                {copied ? 'Copied!' : 'Copy result'}
+              </button>
+            </div>
           </div>
           {activeResult.data !== undefined ? (
             <pre>{JSON.stringify(activeResult.data, null, 2)}</pre>
