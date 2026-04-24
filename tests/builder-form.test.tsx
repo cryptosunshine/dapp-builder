@@ -108,4 +108,46 @@ describe('BuilderForm', () => {
       expect(screen.getByText(/Valid address/i)).toBeInTheDocument();
     });
   });
+
+  test('blocks submission when contract address format is invalid', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+
+    render(<BuilderForm onSubmit={onSubmit} isSubmitting={false} />);
+
+    // Type an invalid address
+    const addressInput = screen.getByLabelText(/contract address/i);
+    await user.clear(addressInput);
+    await user.type(addressInput, '0xinvalid');
+
+    // Try submitting — should be blocked
+    await user.click(screen.getByRole('button', { name: /generate dapp preview/i }));
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    // Should render a visible submit error message
+    expect(screen.getByText(/Please enter a valid contract address/i)).toBeInTheDocument();
+  });
+
+  test('blocks submission when contract address is empty', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+
+    render(<BuilderForm onSubmit={onSubmit} isSubmitting={false} />);
+
+    // The address input has HTML required attribute, so an empty form submit
+    // is blocked by the browser before our handler runs.
+    // Verify the submit button click does not call onSubmit when address is empty.
+    const submitButton = screen.getByRole('button', { name: /generate dapp preview/i });
+
+    // Disable HTML5 validation to test our own submit guard;
+    // remove the 'required' attribute temporarily to test the JS fallback.
+    const addressInput = screen.getByLabelText(/contract address/i);
+    addressInput.removeAttribute('required');
+
+    await user.click(submitButton);
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    // Should show a submit-level error message
+    expect(screen.getByText(/Please enter a valid contract address/i)).toBeInTheDocument();
+  });
 });

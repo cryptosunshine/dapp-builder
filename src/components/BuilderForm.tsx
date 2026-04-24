@@ -36,8 +36,13 @@ function addressHint(address: string): { text: string; className: string } | nul
   return { text: 'Address must start with 0x followed by 40 hex characters', className: 'hint-warn' };
 }
 
+function isAddressInvalid(value: string): boolean {
+  return value.length > 0 && !validAddressRe.test(value);
+}
+
 export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
   const [formState, setFormState] = useState<BuilderTaskInput>(initialState);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validation = useMemo(() => addressHint(formState.contractAddress), [formState.contractAddress]);
 
@@ -46,6 +51,12 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
       className="builder-form"
       onSubmit={(event) => {
         event.preventDefault();
+        setSubmitError(null);
+        const addr = formState.contractAddress;
+        if (addr.length === 0 || isAddressInvalid(addr)) {
+          setSubmitError('Please enter a valid contract address (0x + 40 hex characters)');
+          return;
+        }
         void onSubmit(formState);
       }}
     >
@@ -106,6 +117,7 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
       </div>
 
       <div className="button-row">
+        {submitError && <span className="field-hint hint-warn submit-error">{submitError}</span>}
         <button
           type="button"
           className="secondary-button"
