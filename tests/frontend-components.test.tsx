@@ -242,6 +242,17 @@ describe('MethodCard', () => {
     expect(copyBtn).toBeInTheDocument();
   });
 
+  test('shows a no structured output hint when success result has no data payload', () => {
+    const activeResult: MethodRunResult = {
+      methodName: 'transfer',
+      status: 'success',
+      message: 'Transaction confirmed: 0xabc123',
+    };
+    render(<MethodCard method={writeMethod} onRunMethod={vi.fn()} activeResult={activeResult} />);
+
+    expect(screen.getByText(/no structured output was returned for this call/i)).toBeInTheDocument();
+  });
+
   test('copy button copies data text to clipboard', async () => {
     // Mock clipboard API
     const writeTextMock = vi.fn();
@@ -259,6 +270,28 @@ describe('MethodCard', () => {
     const copyBtn = screen.getByRole('button', { name: /copy result/i });
     fireEvent.click(copyBtn);
     expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('100'));
+  });
+
+  test('shows retry button when method call has error status', () => {
+    const errorResult: MethodRunResult = {
+      methodName: 'balanceOf',
+      status: 'error',
+      message: 'Reverted: insufficient balance',
+    };
+    render(<MethodCard method={readMethod} onRunMethod={vi.fn()} activeResult={errorResult} />);
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+  });
+
+  test('calls onRunMethod when retry button is clicked after error', () => {
+    const onRunMethod = vi.fn();
+    const errorResult: MethodRunResult = {
+      methodName: 'transfer',
+      status: 'error',
+      message: 'Transaction reverted',
+    };
+    render(<MethodCard method={writeMethod} onRunMethod={onRunMethod} activeResult={errorResult} />);
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+    expect(onRunMethod).toHaveBeenCalledWith(writeMethod, {});
   });
 
   test('copy button shows copied feedback temporarily', async () => {
