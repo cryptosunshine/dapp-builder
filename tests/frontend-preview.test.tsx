@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import { PreviewPage } from '../src/components/PreviewPage';
 import type { BuilderTask } from '../shared/schema';
@@ -43,6 +43,16 @@ const task: BuilderTask = {
         ],
         outputs: [],
         description: 'Claim tokens from the contract.',
+      },
+      {
+        name: 'balanceOf',
+        label: 'Balance Of',
+        type: 'read',
+        dangerLevel: 'safe',
+        stateMutability: 'view',
+        inputs: [{ name: 'account', type: 'address' }],
+        outputs: [{ name: '', type: 'uint256' }],
+        description: 'Check an account balance.',
       },
     ],
     sections: [
@@ -89,6 +99,16 @@ const task: BuilderTask = {
           outputs: [],
           description: 'Claim tokens from the contract.',
         },
+        {
+          name: 'balanceOf',
+          label: 'Balance Of',
+          type: 'read',
+          dangerLevel: 'safe',
+          stateMutability: 'view',
+          inputs: [{ name: 'account', type: 'address' }],
+          outputs: [{ name: '', type: 'uint256' }],
+          description: 'Check an account balance.',
+        },
       ],
       sections: [
         {
@@ -96,7 +116,7 @@ const task: BuilderTask = {
           title: 'Actions',
           description: 'Primary user actions',
           variant: 'actions',
-          methodNames: ['claim'],
+          methodNames: ['claim', 'balanceOf'],
         },
       ],
     },
@@ -179,6 +199,27 @@ describe('PreviewPage', () => {
     expect(screen.getByText('Danger zone')).toBeInTheDocument();
     expect(screen.getByText(/administrative or risky/i)).toBeInTheDocument();
     expect(screen.getByText(/set merkle root/i)).toBeInTheDocument();
+  });
+
+  test('filters method cards by selected method type', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /claim/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /balance of/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /read methods/i }));
+
+    expect(screen.getByRole('button', { name: /balance of/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/set merkle root/i)).not.toBeInTheDocument();
   });
 
   test('does not render empty description paragraph when description is empty string', () => {

@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import type { BuilderTask, MethodRunResult, PageMethod, WalletState } from '../types';
 import { getChainMeta } from '../lib/chains';
 import { MethodCard } from './MethodCard';
@@ -14,6 +15,7 @@ interface PreviewPageProps {
 
 export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, activeResult }: PreviewPageProps) {
   const pageConfig = task.result?.pageConfig;
+  const [methodFilter, setMethodFilter] = useState<'all' | 'read' | 'write' | 'danger'>('all');
 
   if (!pageConfig) {
     return <div className="empty-state">No pageConfig is available yet for this task.</div>;
@@ -32,6 +34,23 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
       methodNames: pageConfig.dangerousMethods.map((method) => method.name),
     });
   }
+
+  const filteredMethodMap = useMemo(() => {
+    return new Map(
+      [...methodMap.entries()].filter(([, method]) => {
+        if (methodFilter === 'all') return true;
+        if (methodFilter === 'danger') return method.dangerLevel === 'danger';
+        return method.type === methodFilter;
+      }),
+    );
+  }, [methodFilter, methodMap]);
+
+  const filterButtons = [
+    { value: 'all' as const, label: 'All methods' },
+    { value: 'read' as const, label: 'Read methods' },
+    { value: 'write' as const, label: 'Write methods' },
+    { value: 'danger' as const, label: 'Danger methods' },
+  ];
 
   return (
     <div className="preview-page">
@@ -58,10 +77,25 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
         </section>
       )}
 
+      <section className="stack-section">
+        <div className="button-row">
+          {filterButtons.map((filterButton) => (
+            <button
+              key={filterButton.value}
+              type="button"
+              className={methodFilter === filterButton.value ? 'primary-button' : 'secondary-button'}
+              onClick={() => setMethodFilter(filterButton.value)}
+            >
+              {filterButton.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <div className="section-grid">
         {sections.map((section) => {
           const sectionMethods = section.methodNames
-            .map((methodName) => methodMap.get(methodName))
+            .map((methodName) => filteredMethodMap.get(methodName))
             .filter((method): method is PageMethod => Boolean(method));
 
           return (
