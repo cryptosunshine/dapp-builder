@@ -1,8 +1,8 @@
 {
   "active_branch": "chore/readme-and-final-polish",
-  "active_pr_number": null,
-  "active_pr_url": null,
-  "current_focus": "Group 4: started from merged master. Existing uncommitted work: TaskStatusCard restart link for failed state. Next: README polish and final cleanup.",
+  "active_pr_number": 4,
+  "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/4",
+  "current_focus": "Group 4: started from merged master. Restart link on failed TaskStatusCard committed. PR #4 created. Next: README polish and any remaining edge cases.",
   "group_goal": "Group 4: README polish + final cleanup + any remaining edge cases",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [
