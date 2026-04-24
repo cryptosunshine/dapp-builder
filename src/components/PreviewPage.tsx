@@ -38,7 +38,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
         <div>
           <p className="eyebrow">AI dApp Builder Preview</p>
           <h1>{pageConfig.title}</h1>
-          <p>{pageConfig.description}</p>
+          {pageConfig.description && <p>{pageConfig.description}</p>}
         </div>
         <div className="hero-card__meta">
           <div>Skill: {pageConfig.skill}</div>

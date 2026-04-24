@@ -121,4 +121,130 @@ describe('PreviewPage', () => {
     expect(screen.getByRole('button', { name: /claim/i })).toBeInTheDocument();
     expect(screen.getByText(/set merkle root/i)).toBeInTheDocument();
   });
+
+  test('shows empty state when pageConfig is missing', () => {
+    const taskNoConfig: BuilderTask = {
+      id: 'task-2',
+      status: 'running',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      input: {
+        contractAddress: '0x1234567890123456789012345678901234567890',
+        chain: 'conflux-espace-testnet',
+        skill: 'token-dashboard',
+        model: 'gpt-5.4',
+        apiKey: 'test',
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={taskNoConfig}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText(/no pageconfig/i)).toBeInTheDocument();
+  });
+
+  test('renders fallback danger zone section for dangerousMethods', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Danger zone')).toBeInTheDocument();
+    expect(screen.getByText(/administrative or risky/i)).toBeInTheDocument();
+    expect(screen.getByText(/set merkle root/i)).toBeInTheDocument();
+  });
+
+  test('does not render empty description paragraph when description is empty string', () => {
+    const taskEmptyDesc: BuilderTask = {
+      id: 'task-3',
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      input: {
+        contractAddress: '0x1234567890123456789012345678901234567890',
+        chain: 'conflux-espace-testnet',
+        skill: 'staking-page',
+        model: 'gpt-5.4',
+        apiKey: 'test',
+      },
+      result: {
+        warnings: [],
+        dangerousMethods: [],
+        methods: [{
+          name: 'earned',
+          label: 'Earned',
+          type: 'read',
+          dangerLevel: 'safe',
+          stateMutability: 'view',
+          inputs: [{ name: 'account', type: 'address' }],
+          outputs: [{ name: '', type: 'uint256' }],
+          description: 'Check earned rewards.',
+        }],
+        sections: [{
+          id: 'read-methods',
+          title: 'Read methods',
+          description: '',
+          variant: 'read',
+          methodNames: ['earned'],
+        }],
+        pageConfig: {
+          title: 'Staking Dashboard',
+          description: '',
+          chain: 'conflux-espace-testnet',
+          chainId: 71,
+          contractAddress: '0x1234567890123456789012345678901234567890',
+          contractName: 'Staking',
+          skill: 'staking-page',
+          warnings: [],
+          dangerousMethods: [],
+          methods: [{
+            name: 'earned',
+            label: 'Earned',
+            type: 'read',
+            dangerLevel: 'safe',
+            stateMutability: 'view',
+            inputs: [{ name: 'account', type: 'address' }],
+            outputs: [{ name: '', type: 'uint256' }],
+            description: 'Check earned rewards.',
+          }],
+          sections: [{
+            id: 'read-methods',
+            title: 'Read methods',
+            description: '',
+            variant: 'read',
+            methodNames: ['earned'],
+          }],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={taskEmptyDesc}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    // The title should be visible
+    expect(screen.getByText('Staking Dashboard')).toBeInTheDocument();
+    // But no empty <p> for description — query for a lone <p> with no text
+    // actually just verify the empty string doesn't produce a visible element
+    const descriptionParagraph = screen.queryByText('', { selector: 'p' });
+    expect(descriptionParagraph).not.toBeInTheDocument();
+  });
 });
