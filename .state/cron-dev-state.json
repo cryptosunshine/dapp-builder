@@ -2,8 +2,8 @@
   "active_branch": "chore/readme-and-final-polish",
   "active_pr_number": 4,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/4",
-  "current_focus": "Group 4: added chain metadata display to PreviewPage hero card meta. Next: README polish and any remaining edge cases.",
-  "group_goal": "Group 4: README polish + final cleanup + any remaining edge cases",
+  "current_focus": "Group 4: shipped chain metadata display and README/dev-workflow polish. Latest commit should stay on PR #4 for review; do not merge master until review stays clean.",
+  "group_goal": "Group 4 complete in PR form: wait for clean review on latest commit, then merge manually",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [
     "PRR_kwDOSIgRD874bKdB",
