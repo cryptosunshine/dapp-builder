@@ -140,16 +140,11 @@ The frontend renders directly from this structure instead of inferring UI from r
 - LLM enhancement is optional and safe to fail.
 - Wallet flow currently assumes an injected EVM wallet like MetaMask.
 
-## Prompt extension points
+## Prompt reference docs
 
-You said you will later provide:
-- backend development prompt
-- agent execution prompt
-- frontend dynamic preview prompt
+Agent and developer prompt files are in `docs/prompts/` and can be used to guide
+LLM-based development or to re-implement individual layers from scratch:
 
-Placeholders are ready here:
 - `docs/prompts/backend-development-prompt.md`
 - `docs/prompts/agent-execution-prompt.md`
 - `docs/prompts/frontend-dynamic-preview-prompt.md`
-
-If you want, I can wire those prompt files directly into `server/services/llm.ts` next.

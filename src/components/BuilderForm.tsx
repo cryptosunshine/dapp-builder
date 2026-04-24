@@ -77,7 +77,6 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
             value={formState.apiKey}
             onChange={(event) => setFormState((current) => ({ ...current, apiKey: event.target.value }))}
             placeholder="Optional for now, but wired for future prompt enhancement"
-            required
           />
         </label>
       </div>
