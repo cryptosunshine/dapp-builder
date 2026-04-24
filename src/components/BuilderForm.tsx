@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { BuilderTaskInput } from '../types';
+import { getChainMeta } from '../lib/chains';
 
 interface BuilderFormProps {
   onSubmit: (input: BuilderTaskInput) => void | Promise<void>;
@@ -43,8 +44,10 @@ function isAddressInvalid(value: string): boolean {
 export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
   const [formState, setFormState] = useState<BuilderTaskInput>(initialState);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showChainTooltip, setShowChainTooltip] = useState(false);
 
   const validation = useMemo(() => addressHint(formState.contractAddress), [formState.contractAddress]);
+  const chainMeta = useMemo(() => getChainMeta(formState.chain), [formState.chain]);
 
   return (
     <form
@@ -74,12 +77,25 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
 
         <label className="field">
           <span>Chain</span>
-          <select
-            value={formState.chain}
-            onChange={(event) => setFormState((current) => ({ ...current, chain: event.target.value as BuilderTaskInput['chain'] }))}
-          >
-            <option value="conflux-espace-testnet">Conflux eSpace Testnet</option>
-          </select>
+          <div className="tooltip-anchor">
+            <select
+              value={formState.chain}
+              onChange={(event) => setFormState((current) => ({ ...current, chain: event.target.value as BuilderTaskInput['chain'] }))}
+              onMouseEnter={() => setShowChainTooltip(true)}
+              onMouseLeave={() => setShowChainTooltip(false)}
+              onFocus={() => setShowChainTooltip(true)}
+              onBlur={() => setShowChainTooltip(false)}
+            >
+              <option value="conflux-espace-testnet">Conflux eSpace Testnet</option>
+            </select>
+            {showChainTooltip && (
+              <div className="tooltip-bubble" role="tooltip">
+                <div className="tooltip-row">Chain ID: {chainMeta.chainId}</div>
+                <div className="tooltip-row">RPC: {chainMeta.rpcUrl}</div>
+                <div className="tooltip-row">Currency: {chainMeta.nativeCurrency.symbol}</div>
+              </div>
+            )}
+          </div>
         </label>
 
         <label className="field">

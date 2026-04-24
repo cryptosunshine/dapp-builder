@@ -148,6 +148,32 @@ describe('BuilderForm', () => {
     expect(screen.queryByText(/Please enter a valid contract address/i)).not.toBeInTheDocument();
   });
 
+  test('shows chain metadata tooltip on hover and keyboard focus', async () => {
+    const user = userEvent.setup();
+
+    render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
+
+    const chainSelect = screen.getByLabelText(/chain/i);
+    expect(chainSelect).toBeInTheDocument();
+
+    await user.hover(chainSelect);
+    expect(screen.getByText(/chain id.*71/i)).toBeInTheDocument();
+    expect(screen.getByText(/evmtestnet\.confluxrpc\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/cfx/i)).toBeInTheDocument();
+
+    await user.unhover(chainSelect);
+    expect(screen.queryByText(/chain id.*71/i)).not.toBeInTheDocument();
+
+    await user.tab();
+    await user.tab();
+    expect(chainSelect).toHaveFocus();
+    expect(screen.getByText(/chain id.*71/i)).toBeInTheDocument();
+
+    await user.tab();
+    expect(chainSelect).not.toHaveFocus();
+    expect(screen.queryByText(/chain id.*71/i)).not.toBeInTheDocument();
+  });
+
   test('blocks submission when contract address is empty', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();

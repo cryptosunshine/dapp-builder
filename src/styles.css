@@ -283,6 +283,32 @@ select {
   margin-bottom: 8px;
 }
 
+.tooltip-anchor {
+  position: relative;
+}
+
+.tooltip-bubble {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
+  min-width: 240px;
+  background: #0f1d34;
+  border: 1px solid rgba(132, 167, 214, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  color: #b6c5d6;
+}
+
+.tooltip-row {
+  margin: 0;
+}
+
 @media (max-width: 900px) {
   .page-shell {
     grid-template-columns: 1fr;
