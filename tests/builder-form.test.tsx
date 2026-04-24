@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { BuilderForm } from '../src/components/BuilderForm';
@@ -82,6 +82,30 @@ describe('BuilderForm', () => {
       skill: 'token-dashboard',
       model: 'gpt-5.4',
       apiKey: '',
+    });
+  });
+
+  test('shows a validation hint for invalid contract address format', async () => {
+    const user = userEvent.setup();
+
+    render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
+
+    const addressInput = screen.getByLabelText(/contract address/i);
+
+    // Type an invalid address (too short, not hex)
+    await user.clear(addressInput);
+    await user.type(addressInput, '0xshort');
+
+    // Should show a warning hint
+    expect(screen.getByText(/Address too short/i)).toBeInTheDocument();
+
+    // Now type a valid address
+    await user.clear(addressInput);
+    await user.type(addressInput, '0x1234567890123456789012345678901234567890');
+
+    // Should show a success hint
+    await waitFor(() => {
+      expect(screen.getByText(/Valid address/i)).toBeInTheDocument();
     });
   });
 });

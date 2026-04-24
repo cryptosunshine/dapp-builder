@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { BuilderTaskInput } from '../types';
 
 interface BuilderFormProps {
@@ -16,6 +16,8 @@ const initialState: BuilderTaskInput = {
 
 const sampleContractAddress = '0x1234567890123456789012345678901234567890';
 
+const validAddressRe = /^0x[a-fA-F0-9]{40}$/;
+
 const skillDescriptions: Record<BuilderTaskInput['skill'], string> = {
   'token-dashboard': 'View token balances, transfer tokens, approve spending (ERC20)',
   'nft-mint-page': 'Mint NFTs, check ownership, view metadata',
@@ -23,8 +25,21 @@ const skillDescriptions: Record<BuilderTaskInput['skill'], string> = {
   'staking-page': 'Stake/unstake tokens and track your rewards',
 };
 
+function addressHint(address: string): { text: string; className: string } | null {
+  if (address.length === 0) return null;
+  if (validAddressRe.test(address)) {
+    return { text: '✓ Valid address', className: 'hint-ok' };
+  }
+  if (address.startsWith('0x') && address.length < 42) {
+    return { text: 'Address too short — expected 42 chars (0x + 40 hex)', className: 'hint-warn' };
+  }
+  return { text: 'Address must start with 0x followed by 40 hex characters', className: 'hint-warn' };
+}
+
 export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
   const [formState, setFormState] = useState<BuilderTaskInput>(initialState);
+
+  const validation = useMemo(() => addressHint(formState.contractAddress), [formState.contractAddress]);
 
   return (
     <form
@@ -43,6 +58,7 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
             placeholder="0x..."
             required
           />
+          {validation && <span className={`field-hint ${validation.className}`}>{validation.text}</span>}
         </label>
 
         <label className="field">
