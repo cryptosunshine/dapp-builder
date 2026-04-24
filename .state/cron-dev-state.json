@@ -2,7 +2,7 @@
   "active_branch": "feat/group6-form-ux",
   "active_pr_number": 6,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/6",
-  "current_focus": "Group 6: added Clear form reset button to BuilderForm. Next: richer form UX — show skill descriptions, or add a contract address validation hint.",
+  "current_focus": "Group 6: added skill descriptions below skill select. Next: add a contract address validation hint or a tooltip on the chain select.",
   "group_goal": "Group 6: form UX polish and navigation refinements",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [],
