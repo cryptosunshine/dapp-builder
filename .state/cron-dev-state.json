@@ -1,8 +1,8 @@
 {
   "active_branch": "feat/group7-agent-generation-pipeline",
-  "active_pr_number": null,
-  "active_pr_url": "",
-  "current_focus": "Group 7: implement final real frontend->backend->agent generation pipeline integration after docs/plans showed MVP polish groups complete.",
+  "active_pr_number": 7,
+  "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/7",
+  "current_focus": "Group 7: PR #7 opened with real hermes-agent generation pipeline. Next: merge after verification/review; remaining product work appears complete except non-blocking polish ideas.",
   "group_goal": "Group 7: real agent-backed dapp/page generation pipeline",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [
