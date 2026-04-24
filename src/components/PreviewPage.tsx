@@ -1,4 +1,5 @@
 import type { BuilderTask, MethodRunResult, PageMethod, WalletState } from '../types';
+import { getChainMeta } from '../lib/chains';
 import { MethodCard } from './MethodCard';
 import { WalletBar } from './WalletBar';
 import { WarningBanner } from './WarningBanner';
@@ -42,6 +43,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
         </div>
         <div className="hero-card__meta">
           <div>Skill: {pageConfig.skill}</div>
+          <div>Chain: {getChainMeta(pageConfig.chain).chainName} (ID: {pageConfig.chainId})</div>
           <div>Contract: {pageConfig.contractAddress}</div>
         </div>
       </header>

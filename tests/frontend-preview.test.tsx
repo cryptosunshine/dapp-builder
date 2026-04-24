@@ -150,6 +150,21 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/no pageconfig/i)).toBeInTheDocument();
   });
 
+  test('displays chain metadata in hero card meta section', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    // The hero card meta should show the chain name with ID
+    expect(screen.getByText(/Chain:.*Conflux eSpace Testnet.*ID: 71/)).toBeInTheDocument();
+  });
+
   test('renders fallback danger zone section for dangerousMethods', () => {
     render(
       <PreviewPage
