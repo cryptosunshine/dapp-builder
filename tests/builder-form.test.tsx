@@ -128,6 +128,26 @@ describe('BuilderForm', () => {
     expect(screen.getByText(/Please enter a valid contract address/i)).toBeInTheDocument();
   });
 
+  test('clears submit error when clear form button is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
+
+    // Trigger a submit error with an invalid address
+    const addressInput = screen.getByLabelText(/contract address/i);
+    addressInput.removeAttribute('required');
+    await user.click(screen.getByRole('button', { name: /generate dapp preview/i }));
+
+    // Verify the error message is shown
+    expect(screen.getByText(/Please enter a valid contract address/i)).toBeInTheDocument();
+
+    // Click clear form
+    await user.click(screen.getByRole('button', { name: /clear form/i }));
+
+    // Verify the error message is gone
+    expect(screen.queryByText(/Please enter a valid contract address/i)).not.toBeInTheDocument();
+  });
+
   test('blocks submission when contract address is empty', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();

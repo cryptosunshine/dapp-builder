@@ -129,7 +129,7 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
         <button
           type="button"
           className="secondary-button"
-          onClick={() => setFormState(structuredClone(initialState))}
+          onClick={() => { setFormState(structuredClone(initialState)); setSubmitError(null); }}
         >
           Clear form
         </button>
