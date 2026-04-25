@@ -152,6 +152,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                       method={method}
                       onRunMethod={onRunMethod}
                       activeResult={activeResult}
+                      walletAccount={walletState.account}
                     />
                   ))}
                   {sectionMethods.length === 0 && <div className="empty-state">No methods in this section.</div>}
