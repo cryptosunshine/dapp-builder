@@ -1,5 +1,8 @@
 import { execFile } from 'node:child_process';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import * as os from 'node:os';
+import { mkdtempSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
 import { runHermesAgentGeneration } from '../server/services/hermes-agent';
 import type { AnalyzeContractResult, PageConfig } from '../shared/schema';
 
@@ -8,6 +11,7 @@ vi.mock('node:child_process', () => ({
 }));
 
 const mockedExecFile = vi.mocked(execFile);
+const originalCwd = process.cwd();
 
 const analysis: AnalyzeContractResult = {
   contractAddress: '0x1234567890123456789012345678901234567890',
@@ -42,6 +46,10 @@ beforeEach(() => {
   delete process.env.HERMES_AGENT_COMMAND;
 });
 
+afterEach(() => {
+  process.chdir(originalCwd);
+});
+
 describe('runHermesAgentGeneration', () => {
   test('calls hermes-agent with sanitized task context and parses generated page output', async () => {
     mockedExecFile.mockImplementation((_file, _args, _options, callback) => {
@@ -70,6 +78,8 @@ describe('runHermesAgentGeneration', () => {
       return {} as ReturnType<typeof execFile>;
     });
 
+    process.chdir(mkdtempSync(join(os.tmpdir(), 'dapp-builder-hermes-agent-')));
+
     const result = await runHermesAgentGeneration({
       input: {
         contractAddress: analysis.contractAddress,
@@ -94,5 +104,9 @@ describe('runHermesAgentGeneration', () => {
     const prompt = mockedExecFile.mock.calls[0]?.[1]?.[0] as string;
     expect(prompt).toContain('token-dashboard');
     expect(prompt).not.toContain('secret-api-key');
+    expect(prompt).toContain('不是 scan');
+    expect(prompt).toContain('Revoke approval');
+    expect(prompt).toContain('更像产品');
+    expect(prompt).toContain('"primaryActions": []');
   });
 });

@@ -24,6 +24,7 @@ function mergeGeneratedPageConfig(base: PageConfig, generated?: PageConfig): Pag
     ...(generated.description ? { description: generated.description } : {}),
     sections: safeSections.length > 0 ? safeSections : base.sections,
     warnings: [...new Set([...base.warnings, ...generated.warnings])],
+    primaryActions: generated.primaryActions?.length ? generated.primaryActions : base.primaryActions,
     methods: base.methods,
     dangerousMethods: base.dangerousMethods,
   });

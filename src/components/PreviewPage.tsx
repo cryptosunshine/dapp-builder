@@ -25,6 +25,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
   [...pageConfig.methods, ...pageConfig.dangerousMethods].forEach((method) => methodMap.set(method.name, method));
 
   const sections = [...pageConfig.sections];
+  const primaryActions = pageConfig.primaryActions ?? [];
   if (pageConfig.dangerousMethods.length > 0 && !sections.some((section) => section.variant === 'danger')) {
     sections.push({
       id: 'danger-zone-fallback',
@@ -82,6 +83,24 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
           {pageConfig.warnings.map((warning) => (
             <WarningBanner key={warning} warning={warning} />
           ))}
+        </section>
+      )}
+
+      {primaryActions.length > 0 && (
+        <section className="stack-section">
+          <div className="preview-section quick-actions-panel">
+            <header>
+              <h2>Top actions</h2>
+              <p>The fastest ways a normal user is likely to use this dApp.</p>
+            </header>
+            <div className="button-row">
+              {primaryActions.map((action) => (
+                <span key={action} className="secondary-button quick-action-chip">
+                  {action}
+                </span>
+              ))}
+            </div>
+          </div>
         </section>
       )}
 

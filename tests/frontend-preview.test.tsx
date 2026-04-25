@@ -73,6 +73,7 @@ const task: BuilderTask = {
       contractName: 'Mock Claim',
       skill: 'claim-page',
       warnings: ['Skill matches claim mechanics.'],
+      primaryActions: ['Claim tokens', 'Check wallet balance'],
       dangerousMethods: [
         {
           name: 'setMerkleRoot',
@@ -140,6 +141,22 @@ describe('PreviewPage', () => {
     expect(screen.getByText('Actions')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /claim/i })).toBeInTheDocument();
     expect(screen.getByText(/set merkle root/i)).toBeInTheDocument();
+  });
+
+  test('renders primary action chips when productized pageConfig supplies them', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Top actions')).toBeInTheDocument();
+    expect(screen.getByText('Claim tokens')).toBeInTheDocument();
+    expect(screen.getByText('Check wallet balance')).toBeInTheDocument();
   });
 
   test('shows empty state when pageConfig is missing', () => {

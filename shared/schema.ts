@@ -105,6 +105,7 @@ export const pageConfigSchema = z.object({
   chain: z.enum(supportedChains).default('conflux-espace-testnet'),
   contractName: z.string().default(''),
   warnings: z.array(z.string()).default([]),
+  primaryActions: z.array(z.string()).default([]),
   dangerousMethods: z.array(pageMethodSchema).default([]),
   methods: z.array(pageMethodSchema).default([]),
   sections: z.array(pageSectionSchema).default([]),
