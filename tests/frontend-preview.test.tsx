@@ -444,6 +444,7 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/use the token decimals shown by the app before entering amount/i)).toBeInTheDocument();
     expect(screen.getByText(/send a small test amount first/i)).toBeInTheDocument();
     expect(screen.getByText(/token transfers cannot be reversed/i)).toBeInTheDocument();
+    expect(screen.getByText(/make sure the wallet network matches conflux espace testnet/i)).toBeInTheDocument();
     expect(screen.getByText(/connected wallet will pay gas/i)).toBeInTheDocument();
   });
 
