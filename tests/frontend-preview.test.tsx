@@ -436,6 +436,7 @@ describe('PreviewPage', () => {
 
     expect(screen.getByText('Transfer checklist')).toBeInTheDocument();
     expect(screen.getByText(/confirm the recipient address and token amount/i)).toBeInTheDocument();
+    expect(screen.getByText(/only send to addresses you control or have verified/i)).toBeInTheDocument();
     expect(screen.getByText(/use the token decimals shown by the app before entering amount/i)).toBeInTheDocument();
     expect(screen.getByText(/send a small test amount first/i)).toBeInTheDocument();
     expect(screen.getByText(/token transfers cannot be reversed/i)).toBeInTheDocument();

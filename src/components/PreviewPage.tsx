@@ -165,6 +165,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                 <aside className="transfer-helper-rail" aria-label="Transfer checklist">
                   <strong>Transfer checklist</strong>
                   <span>Confirm the recipient address and token amount before signing.</span>
+                  <small>Only send to addresses you control or have verified.</small>
                   <small>Use the token decimals shown by the app before entering amount.</small>
                   <small>Send a small test amount first when using a new token or recipient.</small>
                   <small>Token transfers cannot be reversed after confirmation.</small>
