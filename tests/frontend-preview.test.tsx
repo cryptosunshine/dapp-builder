@@ -435,6 +435,7 @@ describe('PreviewPage', () => {
 
     expect(screen.getByText('Transfer checklist')).toBeInTheDocument();
     expect(screen.getByText(/confirm the recipient address and token amount/i)).toBeInTheDocument();
+    expect(screen.getByText(/send a small test amount first/i)).toBeInTheDocument();
     expect(screen.getByText(/connected wallet will pay gas/i)).toBeInTheDocument();
   });
 

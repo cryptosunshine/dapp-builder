@@ -164,6 +164,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                 <aside className="transfer-helper-rail" aria-label="Transfer checklist">
                   <strong>Transfer checklist</strong>
                   <span>Confirm the recipient address and token amount before signing.</span>
+                  <small>Send a small test amount first when using a new token or recipient.</small>
                   <small>Your connected wallet will pay gas and send from the active account.</small>
                 </aside>
               )}
