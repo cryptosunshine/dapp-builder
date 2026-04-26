@@ -66,9 +66,13 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
   const walletLabel = walletState.account
     ? `Ready for ${walletState.account.slice(0, 6)}…${walletState.account.slice(-4)}`
     : 'Connect wallet to check your token balance.';
-  const walletReadinessLabel = walletState.account
-    ? `Wallet ready on ${chainMeta.chainName}. Run Balance Of before sending or approving.`
-    : `Connect a wallet on ${chainMeta.chainName} to read your live token position.`;
+  const isWalletWrongChain =
+    walletState.account && walletState.chainId !== null && walletState.chainId !== pageConfig.chainId;
+  const walletReadinessLabel = isWalletWrongChain
+    ? `Wallet is connected to chain ID ${walletState.chainId}. Switch wallet to ${chainMeta.chainName} before checking balances, sending, or approving.`
+    : walletState.account
+      ? `Wallet ready on ${chainMeta.chainName}. Run Balance Of before sending or approving.`
+      : `Connect a wallet on ${chainMeta.chainName} to read your live token position.`;
   const shortenedContractAddress = `${pageConfig.contractAddress.slice(0, 6)}…${pageConfig.contractAddress.slice(-4)}`;
 
   return (

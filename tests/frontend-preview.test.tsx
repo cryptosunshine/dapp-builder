@@ -331,6 +331,42 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/use balance of to check holdings before transfers or approvals/i)).toBeInTheDocument();
   });
 
+  test('warns when the connected wallet is on the wrong chain in the token asset panel', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          sections: [
+            {
+              id: 'token-overview',
+              title: 'Token overview',
+              description: 'Track your wallet position before taking action.',
+              variant: 'overview',
+              methodNames: ['balanceOf'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: '0x1111111111111111111111111111111111111111', chainId: 1, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText(/wallet is connected to chain id 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/switch wallet to conflux espace testnet before checking balances, sending, or approving/i)).toBeInTheDocument();
+  });
+
   test('renders an approval safety rail for ERC20 approval sections', () => {
     const tokenTask: BuilderTask = {
       ...task,
