@@ -435,6 +435,63 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/connected wallet will pay gas/i)).toBeInTheDocument();
   });
 
+  test('keeps ERC20 advanced token actions collapsed until the user opens them', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          methods: [
+            ...task.result!.pageConfig!.methods,
+            {
+              name: 'transferFrom',
+              label: 'Transfer From',
+              type: 'write',
+              dangerLevel: 'warn',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'from', type: 'address' },
+                { name: 'to', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+              description: 'Move approved tokens from another wallet.',
+            },
+          ],
+          sections: [
+            {
+              id: 'advanced-token-actions',
+              title: 'Advanced token actions',
+              description: 'Less common token actions for power users.',
+              variant: 'actions',
+              methodNames: ['transferFrom'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: '0x1111111111111111111111111111111111111111', chainId: 71, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Advanced token actions')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /transfer from/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Advanced token actions'));
+
+    expect(screen.getByRole('button', { name: /transfer from/i })).toBeInTheDocument();
+  });
+
   test('does not render empty description paragraph when description is empty string', () => {
     const taskEmptyDesc: BuilderTask = {
       id: 'task-3',

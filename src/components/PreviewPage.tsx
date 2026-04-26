@@ -16,6 +16,7 @@ interface PreviewPageProps {
 export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, activeResult }: PreviewPageProps) {
   const pageConfig = task.result?.pageConfig;
   const [methodFilter, setMethodFilter] = useState<'all' | 'read' | 'write' | 'danger'>('all');
+  const [expandedAdvancedSections, setExpandedAdvancedSections] = useState<Record<string, boolean>>({});
 
   if (!pageConfig) {
     return <div className="empty-state">No pageConfig is available yet for this task.</div>;
@@ -137,13 +138,12 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
             pageConfig.skill === 'token-dashboard' &&
             sectionMethods.some((method) => ['transfer', 'transferfrom'].includes(method.name.toLowerCase()));
 
-          return (
-            <section key={section.id} className={`preview-section variant-${section.variant}`}>
-              <header>
-                <h2>{section.title}</h2>
-                {section.description && <p>{section.description}</p>}
-              </header>
+          const isAdvancedTokenSection =
+            pageConfig.skill === 'token-dashboard' &&
+            (section.id.toLowerCase().includes('advanced') || section.title.toLowerCase().includes('advanced'));
 
+          const sectionBody = (
+            <>
               {hasApprovalFlow && (
                 <aside className="approval-safety-rail" aria-label="Approval safety">
                   <strong>Approval safety</strong>
@@ -192,6 +192,41 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                   {sectionMethods.length === 0 && <div className="empty-state">No methods in this section.</div>}
                 </div>
               )}
+            </>
+          );
+
+          if (isAdvancedTokenSection) {
+            const isExpanded = Boolean(expandedAdvancedSections[section.id]);
+
+            return (
+              <details
+                key={section.id}
+                className={`preview-section variant-${section.variant} advanced-actions-panel`}
+                open={isExpanded}
+              >
+                <summary
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setExpandedAdvancedSections((current) => ({ ...current, [section.id]: !current[section.id] }));
+                  }}
+                >
+                  <span>
+                    <strong>{section.title}</strong>
+                    {section.description && <small>{section.description}</small>}
+                  </span>
+                </summary>
+                {isExpanded && sectionBody}
+              </details>
+            );
+          }
+
+          return (
+            <section key={section.id} className={`preview-section variant-${section.variant}`}>
+              <header>
+                <h2>{section.title}</h2>
+                {section.description && <p>{section.description}</p>}
+              </header>
+              {sectionBody}
             </section>
           );
         })}
