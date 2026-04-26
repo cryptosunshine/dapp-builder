@@ -149,6 +149,10 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                   <strong>Approval safety</strong>
                   <span>Approve only spenders you trust, and avoid unlimited allowances unless you mean it.</span>
                   <small>Revoke by setting the allowance back to 0 before changing wallets or after finishing an app.</small>
+                  <div className="approval-revoke-path">
+                    <strong>Revoke path</strong>
+                    <span>Use the same spender and submit Approve with amount 0.</span>
+                  </div>
                 </aside>
               )}
 
