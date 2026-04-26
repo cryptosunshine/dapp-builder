@@ -158,6 +158,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                   <small>Start with the exact allowance this app needs; increase later only if intentional.</small>
                   <small>If the token rejects allowance increases, reset that spender to 0 first, then approve the new amount.</small>
                   <small>Revoke by setting the allowance back to 0 before changing wallets or after finishing an app.</small>
+                  <small>After approving, rerun Allowance to confirm the new spending limit before trusting it.</small>
                   <div className="approval-revoke-path">
                     <strong>Revoke path</strong>
                     <span>Use the same spender and submit Approve with amount 0.</span>

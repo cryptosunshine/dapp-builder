@@ -389,6 +389,7 @@ describe('PreviewPage', () => {
     expect(screen.getByText('Revoke path')).toBeInTheDocument();
     expect(screen.getByText(/use the same spender and submit approve with amount 0/i)).toBeInTheDocument();
     expect(screen.getByText(/rerun allowance to confirm it reads 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/after approving, rerun allowance to confirm the new spending limit/i)).toBeInTheDocument();
   });
 
   test('renders a transfer helper rail for ERC20 send sections', () => {
