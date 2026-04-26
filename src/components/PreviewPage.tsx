@@ -60,6 +60,10 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
     { value: 'write' as const, label: `Write methods (${methodCounts.write})` },
     { value: 'danger' as const, label: `Danger methods (${methodCounts.danger})` },
   ];
+  const hasBalanceLookup = pageConfig.skill === 'token-dashboard' && methodMap.has('balanceOf');
+  const walletLabel = walletState.account
+    ? `Ready for ${walletState.account.slice(0, 6)}…${walletState.account.slice(-4)}`
+    : 'Connect wallet to check your token balance.';
 
   return (
     <div className="preview-page">
@@ -143,6 +147,13 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                     <strong>Chain ID</strong>
                     <span>{pageConfig.chainId}</span>
                   </div>
+                  {hasBalanceLookup && (
+                    <div className="asset-card">
+                      <strong>Wallet balance</strong>
+                      <span>{walletLabel}</span>
+                      <small>Use Balance Of to check holdings before transfers or approvals.</small>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="method-grid">

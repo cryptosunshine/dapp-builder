@@ -292,6 +292,43 @@ describe('PreviewPage', () => {
     expect(screen.getByRole('button', { name: /danger methods.*1/i })).toBeInTheDocument();
   });
 
+  test('renders token overview as a wallet asset panel when balanceOf exists', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          sections: [
+            {
+              id: 'token-overview',
+              title: 'Token overview',
+              description: 'Track your wallet position before taking action.',
+              variant: 'overview',
+              methodNames: ['balanceOf'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: '0x1111111111111111111111111111111111111111', chainId: 71, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Wallet balance')).toBeInTheDocument();
+    expect(screen.getByText(/ready for 0x1111…1111/i)).toBeInTheDocument();
+    expect(screen.getByText(/use balance of to check holdings before transfers or approvals/i)).toBeInTheDocument();
+  });
+
   test('does not render empty description paragraph when description is empty string', () => {
     const taskEmptyDesc: BuilderTask = {
       id: 'task-3',
