@@ -152,6 +152,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                 <aside className="approval-safety-rail" aria-label="Approval safety">
                   <strong>Approval safety</strong>
                   <span>Approve only spenders you trust, and avoid unlimited allowances unless you mean it.</span>
+                  <small>Start with the exact allowance this app needs; increase later only if intentional.</small>
                   <small>Revoke by setting the allowance back to 0 before changing wallets or after finishing an app.</small>
                   <div className="approval-revoke-path">
                     <strong>Revoke path</strong>

@@ -380,6 +380,7 @@ describe('PreviewPage', () => {
 
     expect(screen.getByText('Approval safety')).toBeInTheDocument();
     expect(screen.getByText(/approve only spenders you trust/i)).toBeInTheDocument();
+    expect(screen.getByText(/start with the exact allowance this app needs/i)).toBeInTheDocument();
     expect(screen.getByText(/revoke by setting the allowance back to 0/i)).toBeInTheDocument();
     expect(screen.getByText('Revoke path')).toBeInTheDocument();
     expect(screen.getByText(/use the same spender and submit approve with amount 0/i)).toBeInTheDocument();
