@@ -156,6 +156,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                   <small>Double-check the spender address before approving; a wrong spender can drain the allowance.</small>
                   <small>Run Allowance for the spender before approving so you know the current exposure.</small>
                   <small>Start with the exact allowance this app needs; increase later only if intentional.</small>
+                  <small>If the token rejects allowance increases, reset that spender to 0 first, then approve the new amount.</small>
                   <small>Revoke by setting the allowance back to 0 before changing wallets or after finishing an app.</small>
                   <div className="approval-revoke-path">
                     <strong>Revoke path</strong>
