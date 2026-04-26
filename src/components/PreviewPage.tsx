@@ -69,6 +69,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
   const walletReadinessLabel = walletState.account
     ? `Wallet ready on ${chainMeta.chainName}. Run Balance Of before sending or approving.`
     : `Connect a wallet on ${chainMeta.chainName} to read your live token position.`;
+  const shortenedContractAddress = `${pageConfig.contractAddress.slice(0, 6)}…${pageConfig.contractAddress.slice(-4)}`;
 
   return (
     <div className="preview-page">
@@ -188,6 +189,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                       <strong>Wallet balance</strong>
                       <span>{walletLabel}</span>
                       <small className="asset-card__readiness">{walletReadinessLabel}</small>
+                      <small>Token contract {shortenedContractAddress}</small>
                       <small>Use Balance Of to check holdings before transfers or approvals.</small>
                     </div>
                   )}
