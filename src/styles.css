@@ -183,12 +183,16 @@ select {
   border: 1px solid rgba(125, 211, 252, 0.22);
 }
 
-.approval-safety-rail {
+.approval-safety-rail,
+.transfer-helper-rail {
   display: grid;
   gap: 6px;
   margin: 14px 0;
   padding: 14px;
   border-radius: 14px;
+}
+
+.approval-safety-rail {
   background: rgba(251, 191, 36, 0.12);
   border: 1px solid rgba(251, 191, 36, 0.3);
   color: #fde68a;
@@ -196,6 +200,16 @@ select {
 
 .approval-safety-rail small {
   color: #fcd34d;
+}
+
+.transfer-helper-rail {
+  background: rgba(45, 212, 191, 0.12);
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  color: #99f6e4;
+}
+
+.transfer-helper-rail small {
+  color: #5eead4;
 }
 
 .asset-card small {

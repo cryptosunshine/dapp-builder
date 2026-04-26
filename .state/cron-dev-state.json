@@ -2,7 +2,7 @@
   "active_branch": "feat/richer-generated-dapp-ux",
   "active_pr_number": 8,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/8",
-  "current_focus": "Shipped ERC20 approval safety rail in preview; next likely slice: make transfer panel more task-oriented and less raw method-card-like.",
+  "current_focus": "Shipped ERC20 transfer checklist rail in preview; next likely slice: make ERC20 advanced actions less prominent or add revoke-oriented approve helper.",
   "group_goal": "PR #8: richer generated dApp UX; keep polishing ERC20 flagship productization, then broaden agent task-page output.",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [

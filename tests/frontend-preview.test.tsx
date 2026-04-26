@@ -382,6 +382,59 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/revoke by setting the allowance back to 0/i)).toBeInTheDocument();
   });
 
+  test('renders a transfer helper rail for ERC20 send sections', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          methods: [
+            ...task.result!.pageConfig!.methods,
+            {
+              name: 'transfer',
+              label: 'Send tokens',
+              type: 'write',
+              dangerLevel: 'safe',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'recipient', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+              description: 'Transfer tokens to another wallet.',
+            },
+          ],
+          sections: [
+            {
+              id: 'send-tokens',
+              title: 'Send tokens',
+              description: 'Move tokens to another wallet.',
+              variant: 'actions',
+              methodNames: ['transfer'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: '0x1111111111111111111111111111111111111111', chainId: 71, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Transfer checklist')).toBeInTheDocument();
+    expect(screen.getByText(/confirm the recipient address and token amount/i)).toBeInTheDocument();
+    expect(screen.getByText(/connected wallet will pay gas/i)).toBeInTheDocument();
+  });
+
   test('does not render empty description paragraph when description is empty string', () => {
     const taskEmptyDesc: BuilderTask = {
       id: 'task-3',

@@ -133,6 +133,9 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
           const hasApprovalFlow =
             pageConfig.skill === 'token-dashboard' &&
             sectionMethods.some((method) => ['approve', 'allowance'].includes(method.name.toLowerCase()));
+          const hasTransferFlow =
+            pageConfig.skill === 'token-dashboard' &&
+            sectionMethods.some((method) => ['transfer', 'transferfrom'].includes(method.name.toLowerCase()));
 
           return (
             <section key={section.id} className={`preview-section variant-${section.variant}`}>
@@ -146,6 +149,14 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                   <strong>Approval safety</strong>
                   <span>Approve only spenders you trust, and avoid unlimited allowances unless you mean it.</span>
                   <small>Revoke by setting the allowance back to 0 before changing wallets or after finishing an app.</small>
+                </aside>
+              )}
+
+              {hasTransferFlow && (
+                <aside className="transfer-helper-rail" aria-label="Transfer checklist">
+                  <strong>Transfer checklist</strong>
+                  <span>Confirm the recipient address and token amount before signing.</span>
+                  <small>Your connected wallet will pay gas and send from the active account.</small>
                 </aside>
               )}
 
