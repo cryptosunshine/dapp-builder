@@ -130,12 +130,24 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
             .map((methodName) => filteredMethodMap.get(methodName))
             .filter((method): method is PageMethod => Boolean(method));
 
+          const hasApprovalFlow =
+            pageConfig.skill === 'token-dashboard' &&
+            sectionMethods.some((method) => ['approve', 'allowance'].includes(method.name.toLowerCase()));
+
           return (
             <section key={section.id} className={`preview-section variant-${section.variant}`}>
               <header>
                 <h2>{section.title}</h2>
                 {section.description && <p>{section.description}</p>}
               </header>
+
+              {hasApprovalFlow && (
+                <aside className="approval-safety-rail" aria-label="Approval safety">
+                  <strong>Approval safety</strong>
+                  <span>Approve only spenders you trust, and avoid unlimited allowances unless you mean it.</span>
+                  <small>Revoke by setting the allowance back to 0 before changing wallets or after finishing an app.</small>
+                </aside>
+              )}
 
               {section.variant === 'overview' ? (
                 <div className="overview-card">

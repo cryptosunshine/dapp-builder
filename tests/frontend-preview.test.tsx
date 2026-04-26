@@ -329,6 +329,59 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/use balance of to check holdings before transfers or approvals/i)).toBeInTheDocument();
   });
 
+  test('renders an approval safety rail for ERC20 approval sections', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          methods: [
+            ...task.result!.pageConfig!.methods,
+            {
+              name: 'approve',
+              label: 'Approve',
+              type: 'write',
+              dangerLevel: 'warn',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'spender', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+              description: 'Allow another address to spend your tokens.',
+            },
+          ],
+          sections: [
+            {
+              id: 'token-approvals',
+              title: 'Approvals & spender safety',
+              description: 'Review and control token spending approvals.',
+              variant: 'actions',
+              methodNames: ['approve'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Approval safety')).toBeInTheDocument();
+    expect(screen.getByText(/approve only spenders you trust/i)).toBeInTheDocument();
+    expect(screen.getByText(/revoke by setting the allowance back to 0/i)).toBeInTheDocument();
+  });
+
   test('does not render empty description paragraph when description is empty string', () => {
     const taskEmptyDesc: BuilderTask = {
       id: 'task-3',
