@@ -228,6 +228,11 @@ select {
   color: #b6c5d6;
 }
 
+.asset-card__readiness {
+  color: #bae6fd;
+  font-weight: 600;
+}
+
 .warning-banner {
   padding: 12px 14px;
   border-radius: 12px;

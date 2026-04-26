@@ -62,9 +62,13 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
     { value: 'danger' as const, label: `Danger methods (${methodCounts.danger})` },
   ];
   const hasBalanceLookup = pageConfig.skill === 'token-dashboard' && methodMap.has('balanceOf');
+  const chainMeta = getChainMeta(pageConfig.chain);
   const walletLabel = walletState.account
     ? `Ready for ${walletState.account.slice(0, 6)}…${walletState.account.slice(-4)}`
     : 'Connect wallet to check your token balance.';
+  const walletReadinessLabel = walletState.account
+    ? `Wallet ready on ${chainMeta.chainName}. Run Balance Of before sending or approving.`
+    : `Connect a wallet on ${chainMeta.chainName} to read your live token position.`;
 
   return (
     <div className="preview-page">
@@ -178,6 +182,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                     <div className="asset-card">
                       <strong>Wallet balance</strong>
                       <span>{walletLabel}</span>
+                      <small className="asset-card__readiness">{walletReadinessLabel}</small>
                       <small>Use Balance Of to check holdings before transfers or approvals.</small>
                     </div>
                   )}

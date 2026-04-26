@@ -326,6 +326,7 @@ describe('PreviewPage', () => {
 
     expect(screen.getByText('Wallet balance')).toBeInTheDocument();
     expect(screen.getByText(/ready for 0x1111…1111/i)).toBeInTheDocument();
+    expect(screen.getByText(/wallet ready on conflux espace testnet/i)).toBeInTheDocument();
     expect(screen.getByText(/use balance of to check holdings before transfers or approvals/i)).toBeInTheDocument();
   });
 
