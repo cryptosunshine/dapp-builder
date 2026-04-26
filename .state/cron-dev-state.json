@@ -2,7 +2,7 @@
   "active_branch": "feat/richer-generated-dapp-ux",
   "active_pr_number": 8,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/8",
-  "current_focus": "Shipped ERC20 transfer amount-decimals guidance; next likely slice: make recipient/address guidance sharper or continue agent task-page output semantics.",
+  "current_focus": "Shipped ERC20 irreversible-transfer warning in Transfer checklist; next likely slice: sharpen recipient/address guidance or continue agent task-page output semantics.",
   "group_goal": "PR #8: richer generated dApp UX; keep polishing ERC20 flagship productization, then broaden agent task-page output.",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [

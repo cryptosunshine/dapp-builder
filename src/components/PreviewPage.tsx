@@ -167,6 +167,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                   <span>Confirm the recipient address and token amount before signing.</span>
                   <small>Use the token decimals shown by the app before entering amount.</small>
                   <small>Send a small test amount first when using a new token or recipient.</small>
+                  <small>Token transfers cannot be reversed after confirmation.</small>
                   <small>Your connected wallet will pay gas and send from the active account.</small>
                 </aside>
               )}
