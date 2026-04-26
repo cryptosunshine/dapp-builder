@@ -158,6 +158,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                   <div className="approval-revoke-path">
                     <strong>Revoke path</strong>
                     <span>Use the same spender and submit Approve with amount 0.</span>
+                    <small>Rerun Allowance to confirm it reads 0 before trusting the revoke.</small>
                   </div>
                 </aside>
               )}
