@@ -134,7 +134,7 @@ function BuilderHome() {
                 <h2>What ships in the generated page</h2>
               </div>
               <div className="builder-workspace__filters">
-                <button type="button" className="workspace-filter-button">All Categories</button>
+                <button type="button" className="ghost-button workspace-filter-button">All Categories</button>
                 <input type="text" value="" readOnly aria-label="Search asset name, symbol, or address" placeholder="Search asset name, symbol, or address" />
               </div>
             </div>
@@ -154,7 +154,7 @@ function BuilderHome() {
                 <strong>3 rails</strong>
                 <span>Read / write / danger</span>
               </div>
-              <button type="button" className="nav-button nav-button--secondary builder-feature-card__action">View details</button>
+              <button type="button" className="secondary-button builder-feature-card__action">View details</button>
             </article>
 
             <section className="builder-market-table" aria-label="Builder workflow table">
@@ -181,7 +181,7 @@ function BuilderHome() {
                     <strong>{row.borrowed}</strong>
                     <span>{row.borrowedHint}</span>
                   </div>
-                  <button type="button" className="workspace-detail-button">Details</button>
+                  <button type="button" className="ghost-button workspace-detail-button">Details</button>
                 </article>
               ))}
             </section>

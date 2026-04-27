@@ -36,9 +36,18 @@ describe('Builder home product layout', () => {
     expect(screen.getByRole('link', { name: /review generated sections/i })).toHaveAttribute('href', '#builder-workspace');
     expect(screen.getByRole('heading', { name: /what ships in the generated page/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/recommended launch path/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /view details/i })).toHaveClass('secondary-button');
+    expect(screen.getAllByRole('button', { name: /^details$/i })).toHaveLength(3);
+    screen.getAllByRole('button', { name: /^details$/i }).forEach((button) => {
+      expect(button).toHaveClass('ghost-button');
+    });
+    expect(screen.getByRole('button', { name: /all categories/i })).toHaveClass('ghost-button');
     expect(screen.getByLabelText(/builder workflow table/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/generation inputs/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /generation inputs/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use sample contract/i })).toHaveClass('secondary-button');
+    expect(screen.getByRole('button', { name: /clear form/i })).toHaveClass('ghost-button');
+    expect(screen.getByRole('button', { name: /generate dapp preview/i })).toHaveClass('primary-button');
     expect(screen.getByRole('heading', { name: /task delivery/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /safety rails before users click/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /builder launchpad/i })).toHaveClass('builder-context-header--elevated');
