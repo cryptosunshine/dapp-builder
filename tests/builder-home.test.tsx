@@ -41,5 +41,7 @@ describe('Builder home product layout', () => {
     expect(screen.getByRole('heading', { name: /generation inputs/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /task delivery/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /safety rails before users click/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /builder launchpad/i })).toHaveClass('builder-context-header--elevated');
+    expect(screen.getByText(/submit a contract request to generate a preview/i).closest('.status-card')).toHaveClass('status-card--builder-home');
   });
 });

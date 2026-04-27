@@ -175,11 +175,21 @@ button {
 }
 
 .builder-context-header {
-  padding: 28px 0 34px;
+  padding: 30px 32px 36px;
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
-  align-items: end;
+  align-items: stretch;
   gap: 32px;
   color: #eef4ff;
+  border-radius: 30px;
+  background: linear-gradient(135deg, rgba(18, 28, 52, 0.96) 0%, rgba(31, 48, 86, 0.92) 52%, rgba(52, 71, 118, 0.88) 100%);
+  border: 1px solid rgba(168, 187, 229, 0.16);
+  box-shadow: 0 26px 54px rgba(12, 18, 36, 0.28);
+}
+
+.builder-context-header--elevated {
+  box-shadow:
+    0 30px 60px rgba(12, 18, 36, 0.34),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 .builder-context-header__title-row {
@@ -191,6 +201,7 @@ button {
 
 .builder-context-header h1 {
   margin: 0;
+  color: #f9fbff;
   font-size: clamp(2.4rem, 5vw, 4rem);
   line-height: 1;
 }
@@ -198,7 +209,7 @@ button {
 .builder-context-header__copy > p:last-child {
   margin: 0;
   max-width: 60ch;
-  color: #c6d1e7;
+  color: #d7e1f5;
   font-size: 1rem;
 }
 
@@ -422,6 +433,12 @@ button {
   box-shadow: 0 18px 40px rgba(31, 41, 72, 0.1);
 }
 
+.status-card--builder-home {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  border-color: #dbe5f2;
+  box-shadow: 0 22px 44px rgba(31, 41, 72, 0.12);
+}
+
 .builder-form-panel__header {
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr);
   align-items: end;
@@ -442,6 +459,38 @@ button {
   border: 1px solid rgba(132, 167, 214, 0.18);
   border-radius: 18px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.page-shell--builder-home .builder-form-panel,
+.page-shell--builder-home .builder-side-card,
+.page-shell--builder-home .status-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  border: 1px solid #e1e8f2;
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(31, 41, 72, 0.1);
+  color: #17315c;
+}
+
+.page-shell--builder-home .builder-form-panel h2,
+.page-shell--builder-home .builder-side-card h2,
+.page-shell--builder-home .status-card h3,
+.page-shell--builder-home .status-card h4 {
+  color: #162849;
+}
+
+.page-shell--builder-home .builder-form-panel label,
+.page-shell--builder-home .builder-form-panel .field > span:first-child,
+.page-shell--builder-home .builder-side-card .eyebrow,
+.page-shell--builder-home .builder-side-card p,
+.page-shell--builder-home .status-card p,
+.page-shell--builder-home .status-card span,
+.page-shell--builder-home .status-card a {
+  color: #5f6f8f;
+}
+
+.page-shell--builder-home .status-card strong,
+.page-shell--builder-home .status-card a:hover {
+  color: #17315c;
 }
 
 .panel,

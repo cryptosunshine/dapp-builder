@@ -2,7 +2,7 @@
   "active_branch": "feat/richer-generated-dapp-ux",
   "active_pr_number": 8,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/8",
-  "current_focus": "Shipped builder-home launchpad quick-jump CTA slice: hero now exposes Start generation flow + Review generated sections anchors with product-style button treatment; next likely slice: tighten low-contrast hero typography and unify primary/secondary button hierarchy.",
+  "current_focus": "Shipped builder-home launchpad elevation + home-surface task rail slice: hero now carries elevated shell treatment and the status card uses a dedicated builder-home surface variant; next likely slice: unify light-surface button hierarchy so primary/secondary actions read more like a polished dApp dashboard.",
   "group_goal": "PR #8: richer generated dApp UX; keep reducing scan/ABI-dump feel through layout, button hierarchy, ERC20 wallet/transfer/approval product flows, then broaden agent task-page output.",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [

@@ -19,6 +19,12 @@ const task: BuilderTask = {
 };
 
 describe('TaskStatusCard', () => {
+  test('renders a builder-home surface variant when requested', () => {
+    render(<TaskStatusCard task={null} surface="builder-home" />);
+
+    expect(screen.getByText(/submit a contract request to generate a preview/i).closest('.status-card')).toHaveClass('status-card--builder-home');
+  });
+
   test('renders a shareable preview link for the /app task alias', () => {
     render(<TaskStatusCard task={task} />);
 

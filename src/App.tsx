@@ -93,7 +93,7 @@ function BuilderHome() {
         </div>
       </header>
 
-      <section className="builder-context-header" id="market-overview" aria-label="Builder launchpad">
+      <section className="builder-context-header builder-context-header--elevated" id="market-overview" aria-label="Builder launchpad">
         <div className="builder-context-header__copy">
           <p className="eyebrow eyebrow--light">Launchpad mode</p>
           <div className="builder-context-header__title-row">
@@ -215,7 +215,7 @@ function BuilderHome() {
             <h2>Safety rails before users click</h2>
             <p>Approvals, admin methods, and high-friction writes stay separated from the primary wallet-ready path.</p>
           </section>
-          <TaskStatusCard task={task} />
+          <TaskStatusCard task={task} surface="builder-home" />
         </aside>
       </div>
     </div>
