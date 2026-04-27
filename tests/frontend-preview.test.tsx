@@ -235,19 +235,19 @@ describe('PreviewPage', () => {
     expect(screen.getByRole('button', { name: /claim/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /balance of/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /read methods/i }));
+    fireEvent.click(screen.getByRole('button', { name: /read-only info/i }));
 
     expect(screen.getByRole('button', { name: /balance of/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/set merkle root/i)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /write methods/i }));
+    fireEvent.click(screen.getByRole('button', { name: /user actions/i }));
 
     expect(screen.getByRole('button', { name: /claim/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /balance of/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /run dangerous method/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /danger methods/i }));
+    fireEvent.click(screen.getByRole('button', { name: /risk actions/i }));
 
     expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /balance of/i })).not.toBeInTheDocument();
@@ -265,8 +265,8 @@ describe('PreviewPage', () => {
       />,
     );
 
-    const allButton = screen.getByRole('button', { name: /all methods/i });
-    const dangerButton = screen.getByRole('button', { name: /danger methods/i });
+    const allButton = screen.getByRole('button', { name: /full app flow/i });
+    const dangerButton = screen.getByRole('button', { name: /risk actions/i });
 
     expect(allButton).toHaveAttribute('aria-pressed', 'true');
     expect(dangerButton).toHaveAttribute('aria-pressed', 'false');
@@ -289,10 +289,26 @@ describe('PreviewPage', () => {
     );
 
     // The test data has: 1 danger (setMerkleRoot), 2 write (claim + setMerkleRoot), 1 read (balanceOf) = 3 total
-    expect(screen.getByRole('button', { name: /all methods.*3/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /read methods.*1/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /write methods.*2/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /danger methods.*1/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /full app flow.*3/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /read-only info.*1/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /user actions.*2/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /risk actions.*1/i })).toBeInTheDocument();
+  });
+
+  test('frames method filters as product workflow navigation instead of an ABI toolbar', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByLabelText('Product workflow filters')).toBeInTheDocument();
+    expect(screen.getByText('Choose what part of the dApp flow to inspect.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /all methods/i })).not.toBeInTheDocument();
   });
 
   test('renders token overview as a wallet asset panel when balanceOf exists', () => {

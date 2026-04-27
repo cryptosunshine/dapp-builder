@@ -56,10 +56,10 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
   }, [methodFilter, methodMap]);
 
   const filterButtons = [
-    { value: 'all' as const, label: `All methods (${methodCounts.all})` },
-    { value: 'read' as const, label: `Read methods (${methodCounts.read})` },
-    { value: 'write' as const, label: `Write methods (${methodCounts.write})` },
-    { value: 'danger' as const, label: `Danger methods (${methodCounts.danger})` },
+    { value: 'all' as const, label: `Full app flow (${methodCounts.all})` },
+    { value: 'read' as const, label: `Read-only info (${methodCounts.read})` },
+    { value: 'write' as const, label: `User actions (${methodCounts.write})` },
+    { value: 'danger' as const, label: `Risk actions (${methodCounts.danger})` },
   ];
   const hasBalanceLookup = pageConfig.skill === 'token-dashboard' && methodMap.has('balanceOf');
   const chainMeta = getChainMeta(pageConfig.chain);
@@ -118,8 +118,12 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
         </section>
       )}
 
-      <section className="stack-section">
-        <div className="button-row">
+      <section className="stack-section method-filter-panel" aria-label="Product workflow filters">
+        <div>
+          <strong>Workflow view</strong>
+          <p>Choose what part of the dApp flow to inspect.</p>
+        </div>
+        <div className="button-row button-row--segmented">
           {filterButtons.map((filterButton) => (
             <button
               key={filterButton.value}
