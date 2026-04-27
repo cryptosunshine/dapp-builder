@@ -2,7 +2,7 @@
   "active_branch": "feat/richer-generated-dapp-ux",
   "active_pr_number": 8,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/8",
-  "current_focus": "Shipped builder-home light-surface button hierarchy cleanup: recommended-route CTA now uses the shared secondary action style, workflow row/details controls use tertiary ghost actions, and the form reset action is demoted below the primary generate CTA; next likely slice: separate the global header wallet CTA from the page-level generation CTA so only one dominant conversion path competes above the fold.",
+  "current_focus": "Shipped header CTA hierarchy cleanup: the global Connect wallet control is now demoted to a quieter utility action so the hero launch CTA owns the page-level conversion path; next likely slice: tighten header/form spacing or isolate risk cards further so the home flow reads even less like a tool dashboard.",
   "group_goal": "PR #8: richer generated dApp UX; keep reducing scan/ABI-dump feel through layout, button hierarchy, ERC20 wallet/transfer/approval product flows, then broaden agent task-page output.",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [

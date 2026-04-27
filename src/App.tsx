@@ -89,7 +89,7 @@ function BuilderHome() {
         <div className="builder-app-nav__actions">
           <button type="button" className="nav-button nav-button--secondary">Bridge ABI</button>
           <button type="button" className="nav-button nav-button--secondary">Swap flow</button>
-          <button type="button" className="nav-button nav-button--primary">Connect wallet</button>
+          <button type="button" className="nav-button nav-button--utility">Connect wallet</button>
         </div>
       </header>
 
