@@ -104,6 +104,10 @@ function BuilderHome() {
             Move from ABI upload to a shareable product surface with one guided flow: frame the user task,
             generate the page, then hand off the preview route.
           </p>
+          <div className="builder-context-header__actions" role="group" aria-label="Launchpad actions">
+            <a href="#generation-inputs" className="hero-link-button hero-link-button--primary">Start generation flow</a>
+            <a href="#builder-workspace" className="hero-link-button hero-link-button--secondary">Review generated sections</a>
+          </div>
         </div>
         <dl className="builder-context-metrics" aria-label="Builder launchpad metrics">
           <div>
@@ -183,7 +187,11 @@ function BuilderHome() {
             </section>
           </section>
 
-          <section className="panel builder-form-panel builder-form-panel--light" aria-label="Generation inputs">
+          <section
+            className="panel builder-form-panel builder-form-panel--light"
+            id="generation-inputs"
+            aria-label="Generation inputs"
+          >
             <div className="builder-form-panel__header">
               <div>
                 <p className="eyebrow">Generation flow</p>

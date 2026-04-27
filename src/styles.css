@@ -202,6 +202,37 @@ button {
   font-size: 1rem;
 }
 
+.builder-context-header__actions {
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: 12px;
+}
+
+.hero-link-button,
+.hero-link-button:visited {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.hero-link-button--primary {
+  color: #12264b;
+  background: linear-gradient(135deg, #a6ff7a 0%, #63f5cf 100%);
+  box-shadow: 0 14px 30px rgba(55, 214, 190, 0.28);
+}
+
+.hero-link-button--secondary {
+  color: #eef4ff;
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
 .context-pill {
   display: inline-flex;
   align-items: center;

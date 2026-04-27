@@ -31,6 +31,9 @@ describe('Builder home product layout', () => {
     expect(screen.getByRole('region', { name: /builder launchpad/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /launch a wallet-ready dapp from a live contract/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/builder launchpad metrics/i)).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /launchpad actions/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /start generation flow/i })).toHaveAttribute('href', '#generation-inputs');
+    expect(screen.getByRole('link', { name: /review generated sections/i })).toHaveAttribute('href', '#builder-workspace');
     expect(screen.getByRole('heading', { name: /what ships in the generated page/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/recommended launch path/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/builder workflow table/i)).toBeInTheDocument();
