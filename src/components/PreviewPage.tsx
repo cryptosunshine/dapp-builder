@@ -78,15 +78,30 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
   return (
     <div className="preview-page">
       <header className="hero-card">
-        <div>
-          <p className="eyebrow">AI dApp Builder Preview</p>
-          <h1>{pageConfig.title}</h1>
-          {pageConfig.description && <p>{pageConfig.description}</p>}
-        </div>
-        <div className="hero-card__meta">
-          <div>Skill: {pageConfig.skill}</div>
-          <div>Chain: {getChainMeta(pageConfig.chain).chainName} (ID: {pageConfig.chainId})</div>
-          <div>Contract: {pageConfig.contractAddress}</div>
+        <div className="hero-card__content">
+          <div>
+            <p className="eyebrow">AI dApp Builder Preview</p>
+            <h1>{pageConfig.title}</h1>
+            {pageConfig.description && <p>{pageConfig.description}</p>}
+          </div>
+          <dl className="hero-card__meta" aria-label="Product context">
+            <div className="hero-stat-card">
+              <dt>Network</dt>
+              <dd>{chainMeta.chainName}</dd>
+            </div>
+            <div className="hero-stat-card">
+              <dt>User actions</dt>
+              <dd>{methodCounts.write} write methods</dd>
+            </div>
+            <div className="hero-stat-card">
+              <dt>Risk actions</dt>
+              <dd>{methodCounts.danger} isolated path</dd>
+            </div>
+            <div className="hero-stat-card">
+              <dt>Contract</dt>
+              <dd>{shortenedContractAddress}</dd>
+            </div>
+          </dl>
         </div>
       </header>
 
@@ -110,7 +125,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
             <div className="quick-actions-layout">
               <div className="quick-actions-hero">
                 <span className="eyebrow">Start here</span>
-                <strong>{primaryActions[0]}</strong>
+                <strong className="primary-button quick-action-primary">{primaryActions[0]}</strong>
                 <p>Best first step for a normal user opening this generated dApp.</p>
               </div>
               {primaryActions.length > 1 && (

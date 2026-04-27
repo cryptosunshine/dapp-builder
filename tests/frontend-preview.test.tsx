@@ -158,6 +158,7 @@ describe('PreviewPage', () => {
     expect(screen.getByText('Start here')).toBeInTheDocument();
     expect(screen.getByText('Best first step for a normal user opening this generated dApp.')).toBeInTheDocument();
     expect(screen.getByText('Claim tokens').closest('.quick-actions-hero')).toBeInTheDocument();
+    expect(screen.getByText('Claim tokens')).toHaveClass('primary-button');
     expect(screen.getByText('Check wallet balance')).toHaveClass('ghost-button');
   });
 
@@ -189,7 +190,7 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/no pageconfig/i)).toBeInTheDocument();
   });
 
-  test('displays chain metadata in hero card meta section', () => {
+  test('surfaces hero context as compact product summary cards', () => {
     render(
       <PreviewPage
         task={task}
@@ -200,8 +201,15 @@ describe('PreviewPage', () => {
       />,
     );
 
-    // The hero card meta should show the chain name with ID
-    expect(screen.getByText(/Chain:.*Conflux eSpace Testnet.*ID: 71/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Product context')).toBeInTheDocument();
+    expect(screen.getByText('Network')).toBeInTheDocument();
+    expect(screen.getByText('Conflux eSpace Testnet')).toBeInTheDocument();
+    expect(screen.getByText('User actions')).toBeInTheDocument();
+    expect(screen.getByText('2 write methods')).toBeInTheDocument();
+    expect(screen.getByText('Risk actions')).toBeInTheDocument();
+    expect(screen.getByText('1 isolated path')).toBeInTheDocument();
+    expect(screen.getByText('Contract')).toBeInTheDocument();
+    expect(screen.getByText(/0x1234…7890/)).toBeInTheDocument();
   });
 
   test('renders fallback danger zone section for dangerousMethods', () => {

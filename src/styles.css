@@ -178,18 +178,49 @@ select {
 }
 
 .hero-card {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  gap: 18px;
 }
 
+.hero-card__content,
 .hero-card__meta,
 .status-card__details,
 .overview-card,
 .asset-card {
   display: grid;
   gap: 8px;
+}
+
+.hero-card__content {
+  gap: 18px;
+}
+
+.hero-card__meta {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.hero-stat-card {
+  display: grid;
+  gap: 6px;
+  min-height: 96px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(15, 29, 52, 0.7);
+  border: 1px solid rgba(132, 167, 214, 0.16);
+}
+
+.hero-stat-card dt {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hero-stat-card dd {
+  margin: 0;
+  color: #f8fbff;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .wallet-bar {
@@ -325,6 +356,11 @@ select {
 
 .quick-actions-hero strong {
   font-size: 1.05rem;
+}
+
+.quick-action-primary {
+  width: fit-content;
+  pointer-events: none;
 }
 
 .quick-actions-hero p {

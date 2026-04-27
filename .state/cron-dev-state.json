@@ -2,7 +2,7 @@
   "active_branch": "feat/richer-generated-dapp-ux",
   "active_pr_number": 8,
   "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/8",
-  "current_focus": "Shipped top-actions hero CTA + supporting action hierarchy for generated dApp previews; next likely slice: tighten section grid/hero spacing or promote risk zones into a more isolated side rail.",
+  "current_focus": "Shipped hero summary cards + primary CTA styling for generated dApp previews; next likely slice: tighten section grid/hero spacing or promote risk zones into a more isolated side rail.",
   "group_goal": "PR #8: richer generated dApp UX; keep reducing scan/ABI-dump feel through layout, button hierarchy, ERC20 wallet/transfer/approval product flows, then broaden agent task-page output.",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [
