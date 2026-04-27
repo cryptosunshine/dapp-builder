@@ -1,16 +1,52 @@
-import { pageConfigSchema, type BuilderTaskInput, type BuilderTaskResult, type PageConfig, type PageSection } from '../../shared/schema.js';
+import { pageConfigSchema, type BuilderTaskInput, type BuilderTaskResult, type PageConfig, type PageMethod, type PageSection } from '../../shared/schema.js';
 import { fetchContractMetadata } from './abi.js';
 import { analyzeContract } from './analyzer.js';
 import { runHermesAgentGeneration } from './hermes-agent.js';
 import { enhancePageConfigWithLlm } from './llm.js';
 import { buildPageConfig } from './page-config.js';
 
+function mergeMethodCopy(baseMethods: PageMethod[], generatedMethods: PageMethod[] = []): PageMethod[] {
+  const generatedByName = new Map(generatedMethods.map((method) => [method.name, method]));
+
+  return baseMethods.map((baseMethod) => {
+    const generatedMethod = generatedByName.get(baseMethod.name);
+    if (!generatedMethod) {
+      return baseMethod;
+    }
+
+    const inputs =
+      generatedMethod.inputs.length === baseMethod.inputs.length
+        ? baseMethod.inputs.map((input, index) => ({
+            ...input,
+            ...(generatedMethod.inputs[index]?.name ? { name: generatedMethod.inputs[index].name } : {}),
+          }))
+        : baseMethod.inputs;
+
+    const outputs =
+      generatedMethod.outputs.length === baseMethod.outputs.length
+        ? baseMethod.outputs.map((output, index) => ({
+            ...output,
+            ...(generatedMethod.outputs[index]?.name ? { name: generatedMethod.outputs[index].name } : {}),
+          }))
+        : baseMethod.outputs;
+
+    return {
+      ...baseMethod,
+      ...(generatedMethod.label ? { label: generatedMethod.label } : {}),
+      ...(generatedMethod.description ? { description: generatedMethod.description } : {}),
+      ...(generatedMethod.category ? { category: generatedMethod.category } : {}),
+      inputs,
+      outputs,
+    };
+  });
+}
+
 function mergeGeneratedPageConfig(base: PageConfig, generated?: PageConfig): PageConfig {
   if (!generated) {
     return base;
   }
 
-  const allowedMethodNames = new Set(base.methods.map((method) => method.name));
+  const allowedMethodNames = new Set([...base.methods, ...base.dangerousMethods].map((method) => method.name));
   const safeSections = generated.sections
     .map((section): PageSection => ({
       ...section,
@@ -22,11 +58,12 @@ function mergeGeneratedPageConfig(base: PageConfig, generated?: PageConfig): Pag
     ...base,
     ...(generated.title ? { title: generated.title } : {}),
     ...(generated.description ? { description: generated.description } : {}),
+    ...(generated.contractName ? { contractName: generated.contractName } : {}),
     sections: safeSections.length > 0 ? safeSections : base.sections,
     warnings: [...new Set([...base.warnings, ...generated.warnings])],
     primaryActions: generated.primaryActions?.length ? generated.primaryActions : base.primaryActions,
-    methods: base.methods,
-    dangerousMethods: base.dangerousMethods,
+    methods: mergeMethodCopy(base.methods, generated.methods),
+    dangerousMethods: mergeMethodCopy(base.dangerousMethods, generated.dangerousMethods),
   });
 }
 

@@ -1,5 +1,5 @@
-import { execFile } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { execFile, execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -137,6 +137,46 @@ ${JSON.stringify(deterministicPageConfig, null, 2)}
 `;
 }
 
+function resolveHermesAgentInvocation(input: HermesAgentGenerationInput, prompt: string): { command: string; args: string[] } {
+  const command = appConfig.hermesAgentCommand;
+  const sharedArgs = [
+    `--query=${prompt}`,
+    `--model=${input.input.model}`,
+    `--base_url=${appConfig.openAiBaseUrl}`,
+    '--max_turns=3',
+  ];
+
+  if (input.input.apiKey) {
+    sharedArgs.push(`--api_key=${input.input.apiKey}`);
+  }
+
+  if (command !== 'hermes-agent') {
+    return { command, args: sharedArgs };
+  }
+
+  try {
+    const wrapperPath = execFileSync('which', [command], { encoding: 'utf8' }).trim();
+    const wrapperSource = readFileSync(wrapperPath, 'utf8');
+    const pythonPath = wrapperSource.match(/^#!(.+)$/m)?.[1]?.trim();
+    if (!pythonPath) {
+      return { command, args: sharedArgs };
+    }
+
+    const hermesRoot = resolve(dirname(pythonPath), '..', '..');
+    const runAgentPath = resolve(hermesRoot, 'run_agent.py');
+    if (!existsSync(runAgentPath)) {
+      return { command, args: sharedArgs };
+    }
+
+    return {
+      command: pythonPath,
+      args: [runAgentPath, ...sharedArgs],
+    };
+  } catch {
+    return { command, args: sharedArgs };
+  }
+}
+
 function parseAgentRunResult(stdout: string): AgentRunResult | null {
   const fenced = stdout.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
   const candidates = [fenced, stdout.slice(stdout.indexOf('{'), stdout.lastIndexOf('}') + 1)].filter(
@@ -156,12 +196,12 @@ function parseAgentRunResult(stdout: string): AgentRunResult | null {
 
 export async function runHermesAgentGeneration(input: HermesAgentGenerationInput): Promise<AgentRunResult | null> {
   const prompt = buildHermesPrompt(input);
-  const command = appConfig.hermesAgentCommand;
+  const invocation = resolveHermesAgentInvocation(input, prompt);
 
   return new Promise((resolve) => {
     execFile(
-      command,
-      [prompt],
+      invocation.command,
+      invocation.args,
       {
         timeout: appConfig.hermesAgentTimeoutMs,
         maxBuffer: appConfig.hermesAgentMaxBufferBytes,
