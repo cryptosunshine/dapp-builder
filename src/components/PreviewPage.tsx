@@ -202,6 +202,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                       <small className="asset-card__readiness">{walletReadinessLabel}</small>
                       <small>Token contract {shortenedContractAddress}</small>
                       <small>Use Balance Of to check holdings before transfers or approvals.</small>
+                      <small>Rerun Balance Of after switching wallets or completing a token action.</small>
                     </div>
                   )}
                 </div>

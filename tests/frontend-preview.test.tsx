@@ -329,6 +329,7 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/wallet ready on conflux espace testnet/i)).toBeInTheDocument();
     expect(screen.getByText(/token contract 0x1234…7890/i)).toBeInTheDocument();
     expect(screen.getByText(/use balance of to check holdings before transfers or approvals/i)).toBeInTheDocument();
+    expect(screen.getByText(/rerun balance of after switching wallets or completing a token action/i)).toBeInTheDocument();
   });
 
   test('warns when the connected wallet is on the wrong chain in the token asset panel', () => {
