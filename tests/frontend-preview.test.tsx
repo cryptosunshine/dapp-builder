@@ -143,7 +143,7 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/set merkle root/i)).toBeInTheDocument();
   });
 
-  test('renders primary action chips when productized pageConfig supplies them', () => {
+  test('promotes the first top action as the primary CTA and keeps the rest as supporting actions', () => {
     render(
       <PreviewPage
         task={task}
@@ -155,8 +155,10 @@ describe('PreviewPage', () => {
     );
 
     expect(screen.getByText('Top actions')).toBeInTheDocument();
-    expect(screen.getByText('Claim tokens')).toBeInTheDocument();
-    expect(screen.getByText('Check wallet balance')).toBeInTheDocument();
+    expect(screen.getByText('Start here')).toBeInTheDocument();
+    expect(screen.getByText('Best first step for a normal user opening this generated dApp.')).toBeInTheDocument();
+    expect(screen.getByText('Claim tokens').closest('.quick-actions-hero')).toBeInTheDocument();
+    expect(screen.getByText('Check wallet balance')).toHaveClass('ghost-button');
   });
 
   test('shows empty state when pageConfig is missing', () => {

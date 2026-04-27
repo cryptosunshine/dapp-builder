@@ -107,12 +107,21 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
               <h2>Top actions</h2>
               <p>The fastest ways a normal user is likely to use this dApp.</p>
             </header>
-            <div className="button-row">
-              {primaryActions.map((action) => (
-                <span key={action} className="secondary-button quick-action-chip">
-                  {action}
-                </span>
-              ))}
+            <div className="quick-actions-layout">
+              <div className="quick-actions-hero">
+                <span className="eyebrow">Start here</span>
+                <strong>{primaryActions[0]}</strong>
+                <p>Best first step for a normal user opening this generated dApp.</p>
+              </div>
+              {primaryActions.length > 1 && (
+                <div className="button-row quick-actions-supporting" aria-label="Supporting actions">
+                  {primaryActions.slice(1).map((action) => (
+                    <span key={action} className="ghost-button quick-action-chip">
+                      {action}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </section>
