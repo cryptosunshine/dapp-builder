@@ -215,6 +215,9 @@ describe('PreviewPage', () => {
 
     expect(screen.getByText('Danger zone')).toBeInTheDocument();
     expect(screen.getByText(/administrative or risky/i)).toBeInTheDocument();
+    expect(screen.getByText('Admin risk check')).toBeInTheDocument();
+    expect(screen.getByText(/only run these methods if you control the contract/i)).toBeInTheDocument();
+    expect(screen.getByText(/pause access, rewrite balances, or change user permissions/i)).toBeInTheDocument();
     expect(screen.getByText(/set merkle root/i)).toBeInTheDocument();
   });
 

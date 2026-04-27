@@ -185,6 +185,14 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
                 </aside>
               )}
 
+              {section.variant === 'danger' && (
+                <aside className="danger-zone-rail" aria-label="Admin risk check">
+                  <strong>Admin risk check</strong>
+                  <span>Only run these methods if you control the contract and understand the production impact.</span>
+                  <small>Danger-zone calls can pause access, rewrite balances, or change user permissions.</small>
+                </aside>
+              )}
+
               {section.variant === 'overview' ? (
                 <div className="overview-card">
                   <div>
