@@ -275,6 +275,52 @@ describe('PreviewPage', () => {
     expect(screen.getByRole('button', { name: /danger methods.*1/i })).toBeInTheDocument();
   });
 
+  test('renders product experience components when pageConfig includes experience', () => {
+    const experienceTask: BuilderTask = {
+      ...task,
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig,
+          skills: ['token-dashboard', 'guided-flow', 'transaction-timeline', 'explorer-links'],
+          experience: {
+            id: 'exp-token',
+            title: 'Agent Designed Token Console',
+            summary: 'Manage balances, transfers, approvals, and risk.',
+            template: 'token-dashboard',
+            confidence: 0.91,
+            skills: ['token-dashboard', 'guided-flow', 'transaction-timeline', 'explorer-links'],
+            components: [
+              { id: 'hero', type: 'hero', title: 'Agent Designed Token Console', description: 'Manage balances, transfers, approvals, and risk.', methodNames: [], warnings: [], children: [] },
+              { id: 'wallet', type: 'wallet', title: 'Wallet connection', description: 'Choose a wallet.', methodNames: [], warnings: [], children: [] },
+              { id: 'send', type: 'action', title: 'Send tokens', description: 'Transfer tokens safely.', methodName: 'claim', methodNames: ['claim'], warnings: [], children: [] },
+              { id: 'timeline', type: 'timeline', title: 'Transaction timeline', description: 'Track transaction state.', methodNames: [], warnings: [], children: [] },
+              { id: 'explorer', type: 'explorerLink', title: 'View on explorer', description: 'Open contract.', href: 'https://evmtestnet.confluxscan.org/address/0x1234567890123456789012345678901234567890', methodNames: [], warnings: [], children: [] },
+            ],
+            warnings: [],
+            unsupported: [],
+          },
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={experienceTask}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Agent Designed Token Console')).toBeInTheDocument();
+    expect(screen.getByText('Wallet connection')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send tokens/i })).toBeInTheDocument();
+    expect(screen.getByText('Transaction timeline')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /view on explorer/i })).toHaveAttribute('href', expect.stringContaining('confluxscan'));
+  });
+
   test('does not render empty description paragraph when description is empty string', () => {
     const taskEmptyDesc: BuilderTask = {
       id: 'task-3',

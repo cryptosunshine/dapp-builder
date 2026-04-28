@@ -5,6 +5,8 @@ export type {
   BuilderTaskInput,
   BuilderTaskResult,
   ChainKey,
+  Experience,
+  ExperienceComponent,
   PageConfig,
   PageMethod,
   PageSection,

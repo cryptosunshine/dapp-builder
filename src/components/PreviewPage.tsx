@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { BuilderTask, MethodRunResult, PageMethod, WalletState } from '../types';
 import { getChainMeta } from '../lib/chains';
+import { ExperienceRenderer } from './ExperienceRenderer';
 import { MethodCard } from './MethodCard';
 import { WalletBar } from './WalletBar';
 import { WarningBanner } from './WarningBanner';
@@ -19,6 +20,22 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
 
   if (!pageConfig) {
     return <div className="empty-state">No pageConfig is available yet for this task.</div>;
+  }
+
+  if (pageConfig.experience) {
+    return (
+      <div className="preview-page">
+        <ExperienceRenderer
+          experience={pageConfig.experience}
+          methods={pageConfig.methods}
+          dangerousMethods={pageConfig.dangerousMethods}
+          walletState={walletState}
+          onConnectWallet={onConnectWallet}
+          onRunMethod={onRunMethod}
+          activeResult={activeResult}
+        />
+      </div>
+    );
   }
 
   const methodMap = new Map<string, PageMethod>();
