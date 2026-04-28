@@ -29,6 +29,11 @@ interface InvokeAgentInput {
   input: BuilderTaskInput;
 }
 
+interface AgentInvocation {
+  command: string;
+  args: string[];
+}
+
 interface RunAgentGeneratedDappWorkflowInput {
   taskId: string;
   rootDir: string;
@@ -151,7 +156,7 @@ function clampPrompt(prompt: string) {
   return `${prompt.slice(0, maxPromptLength)}\n\n[Prompt truncated to avoid OS process argument limits. Use the provided compact ABI and safety boundaries only.]`;
 }
 
-function resolveAgentInvocation(input: BuilderTaskInput, prompt: string): { command: string; args: string[] } {
+function resolveAgentInvocation(input: BuilderTaskInput, prompt: string): AgentInvocation | null {
   const command = appConfig.hermesAgentCommand;
   const modelConfig = input.modelConfig;
   const sharedArgs = [
@@ -188,12 +193,62 @@ function resolveAgentInvocation(input: BuilderTaskInput, prompt: string): { comm
     if (!existsSync(runAgentPath)) return { command, args: sharedArgs };
     return { command: pythonPath, args: [runAgentPath, ...sharedArgs] };
   } catch {
-    return { command, args: sharedArgs };
+    return null;
   }
+}
+
+async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: string): Promise<unknown> {
+  const modelConfig = input.modelConfig;
+  const apiKey = modelConfig?.apiKey ?? input.apiKey;
+  const model = modelConfig?.model ?? input.model;
+  const baseUrl = modelConfig?.baseUrl ?? appConfig.openAiBaseUrl;
+
+  if (!apiKey || !model) {
+    throw new Error('Agent runtime is unavailable. Install hermes-agent or provide modelConfig.apiKey and model.');
+  }
+
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a strict JSON agent for dapp-builder. Return only the JSON requested by the user prompt.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => '');
+    throw new Error(`Agent API request failed with ${response.status}${message ? `: ${message}` : ''}`);
+  }
+
+  const payload = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const content = payload.choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new Error('Agent API did not return message content.');
+  }
+  return parseJsonIfPresent(content);
 }
 
 async function defaultInvokeAgent({ input, prompt }: InvokeAgentInput): Promise<unknown> {
   const invocation = resolveAgentInvocation(input, prompt);
+  if (!invocation) {
+    return invokeOpenAiCompatibleAgent(input, prompt);
+  }
+
   return new Promise((resolvePromise, reject) => {
     execFile(
       invocation.command,
@@ -208,6 +263,10 @@ async function defaultInvokeAgent({ input, prompt }: InvokeAgentInput): Promise<
       },
       (error, stdout) => {
         if (error) {
+          if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+            invokeOpenAiCompatibleAgent(input, prompt).then(resolvePromise, reject);
+            return;
+          }
           reject(error);
           return;
         }

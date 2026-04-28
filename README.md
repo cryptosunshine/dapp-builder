@@ -112,15 +112,17 @@ The frontend is pageConfig-driven:
 
 Important rule: deterministic ABI analysis stays the source of truth. Agent/LLM output can improve generated experience structure and copy, but must not override safety-critical methods, dangerous-method flags, or warnings.
 
-### hermes-agent integration
+### Agent runtime
 
-The backend invokes `hermes-agent` during task execution after ABI analysis creates the deterministic safety boundary. Runtime knobs:
+The backend runs the multi-stage dApp generation agents after ABI analysis creates the deterministic safety boundary. It first tries a local `hermes-agent` runtime. If that command is not installed, it uses the submitted OpenAI-compatible `modelConfig.baseUrl`, `modelConfig.model`, and `modelConfig.apiKey` for the agent calls.
+
+Local runtime knobs:
 
 - `HERMES_AGENT_COMMAND` — command to execute, default `hermes-agent`
 - `HERMES_AGENT_TIMEOUT_MS` — subprocess timeout, default `120000`
 - `HERMES_AGENT_MAX_BUFFER_BYTES` — stdout buffer cap, default `2000000`
 
-The submitted model API key is never sent to the subprocess or persisted. If hermes-agent is unavailable or returns invalid JSON, the task still falls back to deterministic pageConfig and experience generation.
+The submitted model API key is never persisted. It is only used for the live task process, either as the local agent subprocess API key or as the Authorization header for the configured OpenAI-compatible API fallback.
 
 ## Install
 
