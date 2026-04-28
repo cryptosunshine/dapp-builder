@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import type { BuilderTaskInput } from '../types';
+import { useMemo, useState } from 'react';
+import type { BuilderTaskInput, SkillName } from '../types';
 import { getChainMeta } from '../lib/chains';
 
 interface BuilderFormProps {
@@ -10,21 +10,49 @@ interface BuilderFormProps {
 const initialState: BuilderTaskInput = {
   contractAddress: '',
   chain: 'conflux-espace-testnet',
-  skill: 'token-dashboard',
+  skills: ['auto', 'injected-wallet', 'guided-flow', 'risk-explainer'],
+  skill: 'auto',
   model: 'gpt-5.4',
   apiKey: '',
+  modelConfig: {
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-5.4',
+    apiKey: '',
+  },
 };
 
 const sampleContractAddress = '0x1234567890123456789012345678901234567890';
 
 const validAddressRe = /^0x[a-fA-F0-9]{40}$/;
 
-const skillDescriptions: Record<BuilderTaskInput['skill'], string> = {
-  'token-dashboard': 'View token balances, transfer tokens, approve spending (ERC20)',
-  'nft-mint-page': 'Mint NFTs, check ownership, view metadata',
-  'claim-page': 'Claim tokens and check claimable amounts',
-  'staking-page': 'Stake/unstake tokens and track your rewards',
-};
+const skillGroups = [
+  {
+    title: 'Business direction',
+    skills: [
+      ['auto', 'Auto'],
+      ['token-dashboard', 'Token dashboard'],
+      ['nft-mint-experience', 'NFT mint experience'],
+      ['voting-participation', 'Voting participation'],
+    ],
+  },
+  {
+    title: 'Wallet',
+    skills: [
+      ['injected-wallet', 'Injected wallet'],
+      ['eip-6963-wallet-discovery', 'EIP-6963 wallet discovery'],
+      ['chain-switching', 'Chain switching'],
+    ],
+  },
+  {
+    title: 'Experience',
+    skills: [
+      ['guided-flow', 'Guided flow'],
+      ['transaction-timeline', 'Transaction timeline'],
+      ['risk-explainer', 'Risk explainer'],
+      ['explorer-links', 'Explorer links'],
+    ],
+  },
+] as const;
 
 function addressHint(address: string): { text: string; className: string } | null {
   if (address.length === 0) return null;
@@ -39,6 +67,18 @@ function addressHint(address: string): { text: string; className: string } | nul
 
 function isAddressInvalid(value: string): boolean {
   return value.length > 0 && !validAddressRe.test(value);
+}
+
+function toggleSkill(current: BuilderTaskInput, skill: SkillName): BuilderTaskInput {
+  const skills = current.skills.includes(skill)
+    ? current.skills.filter((entry) => entry !== skill)
+    : [...current.skills, skill];
+
+  return {
+    ...current,
+    skills,
+    skill: skills[0] ?? 'auto',
+  };
 }
 
 export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
@@ -98,27 +138,57 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
           </div>
         </label>
 
+        <fieldset className="field field-full skill-fieldset">
+          <legend>Skills</legend>
+          {skillGroups.map((group) => (
+            <div key={group.title} className="skill-group">
+              <strong>{group.title}</strong>
+              <div className="skill-grid">
+                {group.skills.map(([skill, label]) => (
+                  <label key={skill} className="checkbox-option">
+                    <input
+                      type="checkbox"
+                      checked={formState.skills.includes(skill)}
+                      onChange={() => setFormState((current) => toggleSkill(current, skill))}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </fieldset>
+
         <label className="field">
-          <span>Skill</span>
-          <select
-            value={formState.skill}
-            onChange={(event) => setFormState((current) => ({ ...current, skill: event.target.value as BuilderTaskInput['skill'] }))}
-          >
-            <option value="token-dashboard">token-dashboard</option>
-            <option value="nft-mint-page">nft-mint-page</option>
-            <option value="claim-page">claim-page</option>
-            <option value="staking-page">staking-page</option>
-          </select>
-          <span className="field-hint">{skillDescriptions[formState.skill]}</span>
+          <span>Base URL</span>
+          <input
+            value={formState.modelConfig?.baseUrl ?? ''}
+            onChange={(event) => setFormState((current) => ({
+              ...current,
+              modelConfig: {
+                baseUrl: event.target.value,
+                model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
+                apiKey: current.modelConfig?.apiKey ?? '',
+              },
+            }))}
+            placeholder="https://api.openai.com/v1"
+          />
         </label>
 
         <label className="field">
           <span>Model</span>
           <input
-            value={formState.model}
-            onChange={(event) => setFormState((current) => ({ ...current, model: event.target.value }))}
+            value={formState.modelConfig?.model ?? ''}
+            onChange={(event) => setFormState((current) => ({
+              ...current,
+              model: event.target.value,
+              modelConfig: {
+                baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
+                model: event.target.value,
+                apiKey: current.modelConfig?.apiKey ?? '',
+              },
+            }))}
             placeholder="gpt-5.4"
-            required
           />
         </label>
 
@@ -127,8 +197,16 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
           <input
             id="api-key-input"
             aria-describedby="api-key-hint"
-            value={formState.apiKey}
-            onChange={(event) => setFormState((current) => ({ ...current, apiKey: event.target.value }))}
+            value={formState.modelConfig?.apiKey ?? ''}
+            onChange={(event) => setFormState((current) => ({
+              ...current,
+              apiKey: event.target.value,
+              modelConfig: {
+                baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
+                model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
+                apiKey: event.target.value,
+              },
+            }))}
             placeholder="Optional for now, but wired for future prompt enhancement"
           />
           <span id="api-key-hint" className="field-hint">
