@@ -6,26 +6,32 @@ import {
   type AgentRunResult,
   type AnalyzeContractResult,
   type BuilderTaskInput,
+  type Experience,
   type PageConfig,
 } from '../../shared/schema.js';
 import { appConfig } from '../config.js';
+import type { CapabilitySet } from './capabilities.js';
+import type { NormalizedSkills } from './skills.js';
 
 interface HermesAgentGenerationInput {
   input: BuilderTaskInput;
   abi: AbiEntry[];
   analysis: AnalyzeContractResult;
+  capabilities: CapabilitySet;
+  normalizedSkills: NormalizedSkills;
   deterministicPageConfig: PageConfig;
+  deterministicExperience: Experience;
 }
 
-function buildHermesPrompt({ input, abi, analysis, deterministicPageConfig }: HermesAgentGenerationInput) {
+function buildHermesPrompt({ input, abi, analysis, capabilities, normalizedSkills, deterministicPageConfig, deterministicExperience }: HermesAgentGenerationInput) {
   const safeInput = sanitizeTaskInput(input);
-  return `You are dapp-builder's page generation agent.
-Return ONLY strict JSON matching this shape:
+  return `You are dapp-builder's guided product generation agent.
+Return ONLY strict JSON matching this guided dApp result shape:
 {
   "summary": "short summary",
   "contractAnalysis": {
-    "contractType": "token|nft|claim|staking|unknown",
-    "recommendedSkill": "token-dashboard|nft-mint-page|claim-page|staking-page|unknown",
+    "contractType": "token|nft|voting|claim|staking|unknown|generic",
+    "recommendedSkill": "auto|token-dashboard|nft-mint-experience|voting-participation|unknown",
     "readMethods": [],
     "writeMethods": [],
     "dangerousMethods": [],
@@ -43,8 +49,10 @@ Return ONLY strict JSON matching this shape:
     "warnings": [],
     "dangerousMethods": [],
     "methods": [],
-    "sections": []
+    "sections": [],
+    "experience": {}
   },
+  "experience": {},
   "status": "success|failed",
   "error": ""
 }
@@ -52,11 +60,17 @@ Return ONLY strict JSON matching this shape:
 Hard rules:
 - Do not invent contract methods. Use only methods from the deterministic pageConfig.
 - Do not expose secrets. The apiKey was intentionally omitted.
-- You may improve title, description, sections, section ordering, and safe helper copy.
-- Preserve risk boundaries and warnings from deterministic analysis.
+- Use the capability primitives as your design material.
+- You may generate an experience schema using only supported component types.
+- Do not reference methods outside deterministicPageConfig.methods or deterministicPageConfig.dangerousMethods.
+- Preserve risk boundaries and warnings from deterministic analysis and deterministic experience.
+- You may improve title, description, section ordering, experience structure, and safe helper copy.
 
 Sanitized task input:
 ${JSON.stringify(safeInput, null, 2)}
+
+Selected skills:
+${JSON.stringify(normalizedSkills, null, 2)}
 
 ABI:
 ${JSON.stringify(abi, null, 2)}
@@ -64,8 +78,14 @@ ${JSON.stringify(abi, null, 2)}
 Deterministic analysis:
 ${JSON.stringify(analysis, null, 2)}
 
+Capability primitives:
+${JSON.stringify(capabilities, null, 2)}
+
 Deterministic pageConfig safety boundary:
 ${JSON.stringify(deterministicPageConfig, null, 2)}
+
+Deterministic experience fallback:
+${JSON.stringify(deterministicExperience, null, 2)}
 `;
 }
 
