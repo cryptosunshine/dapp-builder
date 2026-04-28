@@ -100,4 +100,43 @@ describe('task execution failure handling', () => {
       });
     }
   });
+
+  test('redacts command failures before storing task errors', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-task-command-failure-'));
+    cleanupPaths.push(dataDir);
+    mockedRunBuilderAgent.mockRejectedValue(
+      new Error(
+        'Command failed: /root/.hermes/hermes-agent/run_agent.py --query=Frontend agent very long prompt --api_key=secret-api-key',
+      ),
+    );
+
+    const server = await createServer(dataDir);
+
+    try {
+      const address = server.address() as AddressInfo;
+      const baseUrl = `http://127.0.0.1:${address.port}`;
+
+      const createResponse = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+      const createdTask = await createResponse.json();
+      const detail = await waitForTask(baseUrl, createdTask.id);
+      const rawFile = await readFile(join(dataDir, `${createdTask.id}.json`), 'utf8');
+
+      expect(detail.error).toBe('Agent runtime command failed. Check server logs for details.');
+      expect(JSON.stringify(detail)).not.toContain('secret-api-key');
+      expect(JSON.stringify(detail)).not.toContain('--query=');
+      expect(rawFile).not.toContain('secret-api-key');
+      expect(rawFile).not.toContain('--query=');
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    }
+  });
 });

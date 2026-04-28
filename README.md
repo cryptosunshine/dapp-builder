@@ -114,7 +114,7 @@ Important rule: deterministic ABI analysis stays the source of truth. Agent/LLM 
 
 ### Agent runtime
 
-The backend runs the multi-stage dApp generation agents after ABI analysis creates the deterministic safety boundary. It first tries a local `hermes-agent` runtime. If that command is not installed, it uses the submitted OpenAI-compatible `modelConfig.baseUrl`, `modelConfig.model`, and `modelConfig.apiKey` for the agent calls.
+The backend runs the multi-stage dApp generation agents after ABI analysis creates the deterministic safety boundary. When the user submits OpenAI-compatible `modelConfig.baseUrl`, `modelConfig.model`, and `modelConfig.apiKey`, the backend calls that API directly. Without submitted model credentials, it falls back to the local `hermes-agent` runtime when available.
 
 Local runtime knobs:
 
@@ -124,7 +124,7 @@ Local runtime knobs:
 - `AGENT_API_TIMEOUT_MS` — OpenAI-compatible API request timeout, default `180000`
 - `AGENT_API_MAX_ATTEMPTS` — OpenAI-compatible API retry attempts for transient network/429/5xx failures, default `2`
 
-The submitted model API key is never persisted. It is only used for the live task process, either as the local agent subprocess API key or as the Authorization header for the configured OpenAI-compatible API fallback.
+The submitted model API key is never persisted. It is only used for the live task process as the Authorization header for the configured OpenAI-compatible API.
 
 ## Install
 

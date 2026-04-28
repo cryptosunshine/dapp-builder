@@ -23,6 +23,18 @@ interface TaskUpdate {
   error?: string;
 }
 
+function sanitizeTaskError(error: string) {
+  if (error.startsWith('Command failed:')) {
+    return 'Agent runtime command failed. Check server logs for details.';
+  }
+
+  return error
+    .replace(/--api_key=\S+/g, '--api_key=[redacted]')
+    .replace(/Bearer\s+\S+/gi, 'Bearer [redacted]')
+    .replace(/(apiKey|api_key)["'=: ]+[^"',\s]+/gi, '$1=[redacted]')
+    .slice(0, 1000);
+}
+
 export function createTaskStore({ dataDir }: TaskStoreOptions) {
   const taskFilePath = (id: string) => join(dataDir, `${id}.json`);
 
@@ -89,7 +101,7 @@ export function createTaskStore({ dataDir }: TaskStoreOptions) {
       ...(patch.status ? { status: patch.status } : {}),
       ...(patch.progress ? { progress: patch.progress } : {}),
       ...(patch.summary !== undefined ? { summary: patch.summary } : {}),
-      ...(patch.error !== undefined ? { error: patch.error } : {}),
+      ...(patch.error !== undefined ? { error: sanitizeTaskError(patch.error) } : {}),
       ...(patch.result ? { result: builderTaskResultSchema.parse(patch.result) } : {}),
     };
 

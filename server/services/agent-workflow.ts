@@ -296,6 +296,10 @@ async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: stri
 }
 
 async function defaultInvokeAgent({ input, prompt }: InvokeAgentInput): Promise<unknown> {
+  if (input.modelConfig?.apiKey || input.apiKey) {
+    return invokeOpenAiCompatibleAgent(input, prompt);
+  }
+
   const invocation = resolveAgentInvocation(input, prompt);
   if (!invocation) {
     return invokeOpenAiCompatibleAgent(input, prompt);

@@ -64,6 +64,46 @@ afterEach(async () => {
 });
 
 describe('agent workflow OpenAI-compatible fallback', () => {
+  test('uses the submitted model API before local hermes-agent when model credentials are provided', async () => {
+    mockedExecFileSync.mockReturnValue('/root/.hermes/hermes-agent/venv/bin/hermes-agent\n' as never);
+    const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-openai-preferred-'));
+    cleanupPaths.push(rootDir);
+    const responses = [
+      { role: 'product-manager', title: 'Token flow', markdown: '# Token flow\n\nFocus balance and transfers.' },
+      { role: 'designer', title: 'Token workspace', markdown: '# Token workspace\n\nUse an asset-focused dashboard.' },
+      {
+        summary: 'Generated React token dashboard.',
+        files: [
+          { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
+          { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+          { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated without hermes logs</main>; }' },
+        ],
+      },
+    ];
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: JSON.stringify(responses.shift()) } }],
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const artifact = await runAgentGeneratedDappWorkflow({
+      taskId: 'task-openai-preferred',
+      rootDir,
+      input,
+      abi: [],
+      analysis,
+      capabilities: { kind: 'token', confidence: 0.9, primitives: [], unsupported: [] },
+      normalizedSkills: { skills: ['token-dashboard'], businessSkills: ['token-dashboard'], walletSkills: [], experienceSkills: [], diagnostics: [] },
+      build: false,
+    });
+
+    expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
+    expect(mockedExecFile).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   test('uses the submitted model API when hermes-agent is not installed', async () => {
     const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-openai-'));
     cleanupPaths.push(rootDir);
@@ -99,7 +139,7 @@ describe('agent workflow OpenAI-compatible fallback', () => {
     });
 
     expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
-    expect(mockedExecFileSync).toHaveBeenCalledWith('which', ['hermes-agent'], { encoding: 'utf8' });
+    expect(mockedExecFileSync).not.toHaveBeenCalled();
     expect(mockedExecFile).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock).toHaveBeenCalledWith(
