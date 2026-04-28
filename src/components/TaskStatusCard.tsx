@@ -10,7 +10,7 @@ const generationSteps = [
 ] as const;
 
 export function TaskStatusCard({ task, surface = 'default' }: { task: BuilderTask | null; surface?: 'default' | 'builder-home' }) {
-  const surfaceClassName = surface === 'builder-home' ? ' status-card--builder-home' : '';
+  const surfaceClassName = surface === 'builder-home' ? ' status-card--builder-home' : ' status-card--task-preview';
 
   if (!task) {
     return (

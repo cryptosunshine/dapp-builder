@@ -44,6 +44,7 @@ describe('TaskStatusCard', () => {
       />,
     );
 
+    expect(screen.getByText('Task task-42').closest('.status-card')).toHaveClass('status-card--task-preview');
     expect(screen.getByText('Stage: fetching_abi')).toBeInTheDocument();
     expect(screen.getByText('Fetching contract ABI from ConfluxScan.')).toBeInTheDocument();
   });

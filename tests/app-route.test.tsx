@@ -95,4 +95,31 @@ describe('App route aliases', () => {
     expect(screen.queryByRole('link', { name: /open shareable preview/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/preview will appear when the backend finishes processing the task/i)).not.toBeInTheDocument();
   });
+
+  test('renders a readable waiting state while the generated app is still processing', async () => {
+    mockedGetTask.mockResolvedValueOnce({
+      id: 'task-processing',
+      status: 'processing',
+      progress: 'product_planning',
+      summary: 'PM agent is designing the product flow.',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      input: completedTask.input,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/app/task-processing']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/preview will appear when the backend finishes processing the task/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/preview will appear when the backend finishes processing the task/i).closest('.empty-state')).toHaveClass(
+      'empty-state--preview-waiting',
+    );
+    expect(screen.queryByTitle('Agent generated dApp preview')).not.toBeInTheDocument();
+  });
 });

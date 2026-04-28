@@ -325,7 +325,7 @@ function TaskPreviewRoute() {
         ) : task.status === 'failed' ? (
           <div className="empty-state">Task failed before a preview could be generated. Adjust the contract or inputs and submit a new task.</div>
         ) : (
-          <div className="empty-state">Preview will appear when the backend finishes processing the task.</div>
+          <div className="empty-state empty-state--preview-waiting">Preview will appear when the backend finishes processing the task.</div>
         )}
       </>
     );
