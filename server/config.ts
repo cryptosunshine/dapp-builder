@@ -10,6 +10,6 @@ export const appConfig = {
   hermesAgentCommand: process.env.HERMES_AGENT_COMMAND ?? 'hermes-agent',
   hermesAgentTimeoutMs: Number(process.env.HERMES_AGENT_TIMEOUT_MS ?? 120_000),
   hermesAgentMaxBufferBytes: Number(process.env.HERMES_AGENT_MAX_BUFFER_BYTES ?? 2_000_000),
-  agentApiTimeoutMs: Number(process.env.AGENT_API_TIMEOUT_MS ?? 600_000),
-  agentApiMaxAttempts: Number(process.env.AGENT_API_MAX_ATTEMPTS ?? 3),
+  agentApiTimeoutMs: Number(process.env.AGENT_API_TIMEOUT_MS ?? 180_000),
+  agentApiMaxAttempts: Number(process.env.AGENT_API_MAX_ATTEMPTS ?? 2),
 };

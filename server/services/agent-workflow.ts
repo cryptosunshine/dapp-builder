@@ -19,9 +19,9 @@ import { createGeneratedAppArtifact } from './generated-apps.js';
 import type { NormalizedSkills } from './skills.js';
 
 type AgentStage = 'product_planning' | 'experience_design' | 'frontend_generation';
-const maxPromptLength = 55_000;
-const maxDocumentLength = 6_000;
-const maxContextMethods = 80;
+const maxPromptLength = 16_000;
+const maxDocumentLength = 1_500;
+const maxContextMethods = 30;
 
 interface InvokeAgentInput {
   stage: AgentStage;
@@ -116,14 +116,18 @@ function compactMethods(methods: AnalyzeContractResult['methods']) {
     type: method.type,
     dangerLevel: method.dangerLevel,
     stateMutability: method.stateMutability,
-    inputs: method.inputs,
-    outputs: method.outputs,
+    inputs: method.inputs.map((input) => ({ name: input.name, type: input.type })),
+    outputs: method.outputs.map((output) => ({ name: output.name, type: output.type })),
   }));
 }
 
 function compactContext(input: RunAgentGeneratedDappWorkflowInput) {
   return {
-    taskInput: sanitizeTaskInput(input.input),
+    taskInput: {
+      contractAddress: input.input.contractAddress,
+      chain: input.input.chain,
+      skills: sanitizeTaskInput(input.input).skills,
+    },
     analysis: {
       contractAddress: input.analysis.contractAddress,
       contractName: input.analysis.contractName,
@@ -132,7 +136,7 @@ function compactContext(input: RunAgentGeneratedDappWorkflowInput) {
       contractType: input.analysis.contractType,
       skillMatch: input.analysis.skillMatch,
       recommendedSkills: input.analysis.recommendedSkills,
-      warnings: input.analysis.warnings.slice(0, 20),
+      warnings: input.analysis.warnings.slice(0, 8),
       methods: compactMethods(input.analysis.methods),
       dangerousMethods: compactMethods(input.analysis.dangerousMethods),
       omittedMethodCount: Math.max(0, input.analysis.methods.length - maxContextMethods),
@@ -140,10 +144,15 @@ function compactContext(input: RunAgentGeneratedDappWorkflowInput) {
     capabilities: {
       kind: input.capabilities.kind,
       confidence: input.capabilities.confidence,
-      primitives: input.capabilities.primitives.slice(0, 60),
-      unsupported: input.capabilities.unsupported.slice(0, 20),
+      primitives: input.capabilities.primitives.slice(0, 24),
+      unsupported: input.capabilities.unsupported.slice(0, 8),
     },
-    normalizedSkills: input.normalizedSkills,
+    normalizedSkills: {
+      skills: input.normalizedSkills.skills,
+      businessSkills: input.normalizedSkills.businessSkills,
+      walletSkills: input.normalizedSkills.walletSkills,
+      experienceSkills: input.normalizedSkills.experienceSkills,
+    },
     abi: compactAbi(input.abi),
     omittedAbiEntryCount: Math.max(0, input.abi.length - maxContextMethods),
   };
@@ -163,7 +172,7 @@ function resolveAgentInvocation(input: BuilderTaskInput, prompt: string): AgentI
     `--query=${prompt}`,
     `--model=${modelConfig?.model ?? input.model}`,
     `--base_url=${modelConfig?.baseUrl ?? appConfig.openAiBaseUrl}`,
-    '--max_turns=4',
+    '--max_turns=2',
   ];
 
   const apiKey = modelConfig?.apiKey ?? input.apiKey;
@@ -237,7 +246,8 @@ async function requestOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: str
       messages: [
         {
           role: 'system',
-          content: 'You are a strict JSON agent for dapp-builder. Return only the JSON requested by the user prompt.',
+          content:
+            'You are a fast strict JSON agent for dapp-builder. Return only requested JSON. Keep content concise. Do not include reasoning.',
         },
         {
           role: 'user',
@@ -323,20 +333,16 @@ function buildSharedContext(input: RunAgentGeneratedDappWorkflowInput) {
 }
 
 function buildProductPrompt(input: RunAgentGeneratedDappWorkflowInput) {
-  return clampPrompt(`You are the PM agent for dapp-builder.
-Return strict JSON: {"role":"product-manager","title":"...","markdown":"..."}.
-Design a product flow document from the contract. Do not write UI code.
-The product must not be a scan, ABI viewer, or method dump. Translate contract methods into user goals and safe flows.
+  return clampPrompt(`PM agent. Return only JSON: {"role":"product-manager","title":"...","markdown":"..."}.
+Write a concise MVP product flow, max 8 bullets. No code. No scan/method dump. Focus on 2-4 user goals and safety notes.
 
 Context:
 ${buildSharedContext(input)}`);
 }
 
 function buildDesignPrompt(input: RunAgentGeneratedDappWorkflowInput, productPlan: AgentDocument) {
-  return clampPrompt(`You are the designer agent for dapp-builder.
-Return strict JSON: {"role":"designer","title":"...","markdown":"..."}.
-Create a visual and interaction design document from the PM plan. Define layout, hierarchy, states, mobile behavior, and risk surfaces.
-Avoid scan-like method lists. Prefer product workflows, action tabs, asset panels, and advanced method collapse.
+  return clampPrompt(`Designer agent. Return only JSON: {"role":"designer","title":"...","markdown":"..."}.
+Write a concise UI brief, max 8 bullets. Define layout, primary action area, wallet state, risk state, and mobile behavior. No scan/method table.
 
 Product plan:
 ${truncateText(productPlan.markdown)}
@@ -346,11 +352,8 @@ ${buildSharedContext(input)}`);
 }
 
 function buildFrontendPrompt(input: RunAgentGeneratedDappWorkflowInput, productPlan: AgentDocument, designSpec: AgentDocument) {
-  return clampPrompt(`You are the frontend engineer agent for dapp-builder.
-Return strict JSON: {"summary":"...","files":[{"path":"package.json","content":"..."},{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."}]}.
-Generate a complete Vite React app. The generated page must be product-like and must not render the ABI as a scan or method table.
-Use only contract methods present in the ABI context. Keep dangerous/admin methods away from primary CTAs.
-The app can use React and browser wallet APIs. Do not include API keys or secrets.
+  return clampPrompt(`Frontend agent. Return only JSON: {"summary":"...","files":[{"path":"package.json","content":"..."},{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."}]}.
+Generate a minimal complete Vite React app. Keep code compact. Product-like, not ABI scan. Use only methods in context. No secrets.
 
 Product plan:
 ${truncateText(productPlan.markdown)}

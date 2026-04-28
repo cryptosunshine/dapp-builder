@@ -108,7 +108,7 @@ describe('agent generated dApp workflow', () => {
     expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
   });
 
-  test('keeps agent prompts bounded so large ABIs do not exceed spawn argument limits', async () => {
+  test('keeps agent prompts small for the MVP generation path', async () => {
     const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-'));
     cleanupPaths.push(rootDir);
     const largeAbi: AbiEntry[] = Array.from({ length: 500 }, (_, index) => ({
@@ -174,6 +174,6 @@ describe('agent generated dApp workflow', () => {
       },
     });
 
-    expect(Math.max(...promptLengths)).toBeLessThan(60_000);
+    expect(Math.max(...promptLengths)).toBeLessThan(18_000);
   });
 });
