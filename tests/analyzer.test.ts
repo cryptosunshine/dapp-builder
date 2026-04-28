@@ -47,17 +47,17 @@ describe('analyzeContract', () => {
     expect(analysis.dangerousMethods.map((method) => method.name)).toContain('pause');
   });
 
-  test('recommends nft-mint-page for mintable NFT contracts', () => {
+  test('recommends nft-mint-experience for mintable NFT contracts', () => {
     const analysis = analyzeContract({
       abi: nftMintAbi,
       contractAddress: '0x1234567890123456789012345678901234567890',
       contractName: 'Mock NFT',
       chain: 'conflux-espace-testnet',
-      requestedSkill: 'nft-mint-page',
+      requestedSkill: 'nft-mint-experience',
     });
 
     expect(analysis.contractType).toBe('nft');
-    expect(analysis.recommendedSkill).toBe('nft-mint-page');
+    expect(analysis.recommendedSkill).toBe('nft-mint-experience');
     expect(analysis.writeMethods.find((method) => method.name === 'mint')?.category).toBe('mint');
   });
 
