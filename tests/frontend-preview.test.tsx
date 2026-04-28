@@ -125,6 +125,40 @@ const task: BuilderTask = {
 };
 
 describe('PreviewPage', () => {
+  test('renders the agent generated React app in an iframe when generatedApp is available', () => {
+    const generatedTask: BuilderTask = {
+      ...task,
+      result: {
+        ...task.result!,
+        generatedApp: {
+          taskId: 'task-1',
+          sourceDir: 'data/generated-dapps/task-1/source',
+          distDir: 'data/generated-dapps/task-1/dist',
+          previewUrl: '/generated-dapps/task-1/dist/index.html',
+          buildStatus: 'success',
+          productPlan: { role: 'product-manager', title: 'Token flow', markdown: '# Token flow' },
+          designSpec: { role: 'designer', title: 'Token dashboard', markdown: '# Token dashboard' },
+          frontendSummary: 'Generated React app.',
+          validationWarnings: [],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={generatedTask}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByTitle('Agent generated dApp preview')).toHaveAttribute('src', '/generated-dapps/task-1/dist/index.html');
+    expect(screen.queryByText('Top actions')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
+  });
+
   test('renders warnings and method labels from pageConfig', () => {
     render(
       <PreviewPage

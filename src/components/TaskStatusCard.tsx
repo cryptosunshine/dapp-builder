@@ -1,5 +1,14 @@
 import type { BuilderTask } from '../types';
 
+const generationSteps = [
+  { progress: 'fetching_abi', label: 'ABI' },
+  { progress: 'product_planning', label: 'Product plan' },
+  { progress: 'experience_design', label: 'Design' },
+  { progress: 'frontend_generation', label: 'React app' },
+  { progress: 'validating_generated_app', label: 'Build' },
+  { progress: 'completed', label: 'Done' },
+] as const;
+
 export function TaskStatusCard({ task, surface = 'default' }: { task: BuilderTask | null; surface?: 'default' | 'builder-home' }) {
   const surfaceClassName = surface === 'builder-home' ? ' status-card--builder-home' : '';
 
@@ -13,6 +22,9 @@ export function TaskStatusCard({ task, surface = 'default' }: { task: BuilderTas
   }
 
   const previewHref = task.id && task.status !== 'failed' ? `/app/${task.id}` : null;
+  const currentStepIndex = task.progress
+    ? Math.max(0, generationSteps.findIndex((step) => step.progress === task.progress))
+    : 0;
 
   return (
     <div className={`status-card status-${task.status}${surfaceClassName}`}>
@@ -20,6 +32,21 @@ export function TaskStatusCard({ task, surface = 'default' }: { task: BuilderTas
       <p>Status: {task.status}</p>
       {task.progress && <p>Stage: {task.progress}</p>}
       {task.summary && <p>{task.summary}</p>}
+      <ol className="generation-stepper" aria-label="dApp generation progress">
+        {generationSteps.map((step, index) => {
+          const isCurrent = task.progress === step.progress;
+          const isDone = task.status === 'completed' || index < currentStepIndex;
+          return (
+            <li
+              key={step.progress}
+              className={`generation-stepper__item${isCurrent ? ' is-current' : ''}${isDone ? ' is-done' : ''}`}
+            >
+              <span className="generation-stepper__dot" aria-hidden="true" />
+              <span aria-current={isCurrent ? 'step' : undefined}>{step.label}</span>
+            </li>
+          );
+        })}
+      </ol>
       {previewHref && (
         <p>
           <a href={previewHref}>Open shareable preview</a>

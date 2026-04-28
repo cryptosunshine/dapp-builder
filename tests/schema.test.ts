@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import {
   builderTaskInputSchema,
+  builderTaskResultSchema,
   experienceSchema,
+  generatedAppArtifactSchema,
   sanitizeTaskInput,
   supportedSkills,
+  taskProgressStages,
 } from '../shared/schema';
 
 describe('guided generation shared schema', () => {
@@ -78,5 +81,43 @@ describe('guided generation shared schema', () => {
 
     expect(experience.components.map((component) => component.type)).toEqual(['hero', 'metric', 'action', 'risk']);
     expect(supportedSkills).toContain('eip-6963-wallet-discovery');
+  });
+
+  test('generated app artifact schema records agent documents and preview url', () => {
+    const artifact = generatedAppArtifactSchema.parse({
+      taskId: 'task-123',
+      sourceDir: 'data/generated-dapps/task-123/source',
+      distDir: 'data/generated-dapps/task-123/dist',
+      previewUrl: '/generated-dapps/task-123/dist/index.html',
+      buildStatus: 'success',
+      productPlan: {
+        role: 'product-manager',
+        title: 'Token product flow',
+        markdown: '# Token product flow\n\nUsers can view balance, send tokens, and manage approvals.',
+      },
+      designSpec: {
+        role: 'designer',
+        title: 'Aave-like token workspace',
+        markdown: '# Aave-like token workspace\n\nUse a calm asset dashboard with action tabs.',
+      },
+      validationWarnings: [],
+    });
+
+    expect(artifact.previewUrl).toBe('/generated-dapps/task-123/dist/index.html');
+    expect(artifact.productPlan.role).toBe('product-manager');
+    expect(builderTaskResultSchema.parse({
+      pageConfig: {
+        title: 'Compatibility shell',
+        contractAddress: '0x1234567890123456789012345678901234567890',
+      },
+      generatedApp: artifact,
+    }).generatedApp?.buildStatus).toBe('success');
+    expect(taskProgressStages).toEqual(expect.arrayContaining([
+      'product_planning',
+      'experience_design',
+      'frontend_generation',
+      'validating_generated_app',
+      'completed',
+    ]));
   });
 });

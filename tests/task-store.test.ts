@@ -69,4 +69,25 @@ describe('createTaskStore', () => {
       modelConfig: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-5.4' },
     });
   });
+
+  test('persists generation progress and summary updates', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-store-'));
+    cleanupPaths.push(dataDir);
+
+    const store = createTaskStore({ dataDir });
+    const task = await store.createTask(request);
+
+    await store.updateTask(task.id!, {
+      status: 'processing',
+      progress: 'product_planning',
+      summary: 'PM agent is designing the product flow.',
+    });
+
+    const persisted = await store.getTask(task.id!);
+    expect(persisted).toMatchObject({
+      status: 'processing',
+      progress: 'product_planning',
+      summary: 'PM agent is designing the product flow.',
+    });
+  });
 });

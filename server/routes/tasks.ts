@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ZodError } from 'zod';
 import { builderTaskInputSchema } from '../../shared/schema.js';
+import { appConfig } from '../config.js';
 import { runBuilderAgent } from '../services/agent.js';
 import type { TaskStore } from '../services/task-store.js';
 
@@ -31,9 +32,24 @@ export function createTaskRouter({ taskStore }: CreateTaskRouterOptions) {
           if (!taskId) {
             throw new Error('Created task is missing an id/taskId field.');
           }
-          await taskStore.updateTask(taskId, { status: 'processing' });
-          const result = await runBuilderAgent(input);
-          await taskStore.updateTask(taskId, { status: 'completed', result });
+          await taskStore.updateTask(taskId, {
+            status: 'processing',
+            progress: 'fetching_abi',
+            summary: 'Fetching contract ABI and metadata from ConfluxScan.',
+          });
+          const result = await runBuilderAgent(input, {
+            taskId,
+            generatedAppsDir: appConfig.generatedDappsDir,
+            onProgress: async (progress, summary) => {
+              await taskStore.updateTask(taskId, { progress, summary });
+            },
+          });
+          await taskStore.updateTask(taskId, {
+            status: 'completed',
+            progress: 'completed',
+            summary: result.summary,
+            result,
+          });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown task failure';
           const taskId = task.id ?? task.taskId;

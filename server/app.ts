@@ -8,6 +8,7 @@ export function createApp() {
   const taskStore = createTaskStore({ dataDir: appConfig.dataDir });
 
   app.use(express.json({ limit: '1mb' }));
+  app.use('/generated-dapps', express.static(appConfig.generatedDappsDir));
 
   app.get('/api/health', (_request, response) => {
     response.json({ ok: true });
