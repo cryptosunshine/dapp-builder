@@ -26,13 +26,16 @@ const DANGEROUS_EXACT_METHODS = new Set([
 ]);
 
 const TOKEN_HINTS = ['balanceof', 'transfer', 'approve', 'totalsupply', 'allowance', 'symbol', 'decimals'];
-const NFT_HINTS = ['ownerof', 'tokenuri', 'safeTransferFrom'.toLowerCase(), 'setApprovalForAll'.toLowerCase()];
+const NFT_HINTS = ['ownerof', 'tokenuri', 'safetransferfrom', 'setapprovalforall', 'mint', 'safemint'];
 const CLAIM_HINTS = ['claim', 'isclaimed', 'merkle', 'proof', 'airdrop'];
 const STAKING_HINTS = ['stake', 'unstake', 'withdraw', 'deposit', 'earned', 'reward', 'getreward', 'claimrewards'];
+const VOTING_HINTS = ['vote', 'castvote', 'hasvoted', 'proposal', 'proposals', 'quorum', 'delegate', 'getvotes', 'state'];
 
-const skillToContractType: Record<SkillName, AnalyzeContractResult['contractType']> = {
+const skillToContractType: Partial<Record<SkillName, AnalyzeContractResult['contractType']>> = {
   'token-dashboard': 'token',
+  'nft-mint-experience': 'nft',
   'nft-mint-page': 'nft',
+  'voting-participation': 'voting',
   'claim-page': 'claim',
   'staking-page': 'staking',
 };
@@ -59,6 +62,7 @@ function classifyCategory(name: string) {
   if (lowerName.includes('reward') || lowerName.includes('earned')) return 'rewards';
   if (lowerName.includes('transfer') || lowerName.includes('approve')) return 'token';
   if (lowerName.includes('ownerof') || lowerName.includes('tokenuri')) return 'nft';
+  if (lowerName.includes('vote') || lowerName.includes('proposal') || lowerName.includes('quorum')) return 'voting';
   if (lowerName.includes('balance') || lowerName.includes('supply') || lowerName.includes('symbol')) return 'read';
   if (lowerName.startsWith('set') || lowerName.includes('owner') || lowerName.includes('admin')) return 'admin';
   return 'general';
@@ -93,14 +97,16 @@ function scoreCapability(functionNames: string[], hints: string[]) {
 
 function detectRecommendedSkills(functionNames: string[]) {
   const tokenScore = scoreCapability(functionNames, TOKEN_HINTS);
-  const nftScore = scoreCapability(functionNames, NFT_HINTS) + Number(functionNames.some((name) => name.includes('mint')));
+  const nftScore = scoreCapability(functionNames, NFT_HINTS);
   const claimScore = scoreCapability(functionNames, CLAIM_HINTS);
   const stakingScore = scoreCapability(functionNames, STAKING_HINTS);
+  const votingScore = scoreCapability(functionNames, VOTING_HINTS);
 
   const recommendations: SkillName[] = [];
 
   if (tokenScore >= 3) recommendations.push('token-dashboard');
-  if (nftScore >= 2) recommendations.push('nft-mint-page');
+  if (nftScore >= 2) recommendations.push('nft-mint-experience');
+  if (votingScore >= 2) recommendations.push('voting-participation');
   if (claimScore >= 2) recommendations.push('claim-page');
   if (stakingScore >= 2) recommendations.push('staking-page');
 
@@ -109,13 +115,14 @@ function detectRecommendedSkills(functionNames: string[]) {
     scores: {
       token: tokenScore,
       nft: nftScore,
+      voting: votingScore,
       claim: claimScore,
       staking: stakingScore,
     },
   };
 }
 
-function determineContractType(scores: Record<'token' | 'nft' | 'claim' | 'staking', number>): AnalyzeContractResult['contractType'] {
+function determineContractType(scores: Record<'token' | 'nft' | 'voting' | 'claim' | 'staking', number>): AnalyzeContractResult['contractType'] {
   const entries = Object.entries(scores) as Array<[AnalyzeContractResult['contractType'], number]>;
   const [winner, score] = entries.sort((left, right) => right[1] - left[1])[0];
   return score > 0 ? winner : 'unknown';
@@ -157,8 +164,9 @@ export function analyzeContract(input: AnalyzeContractInput): AnalyzeContractRes
   const readMethods = methods.filter((method) => method.type === 'read');
   const writeMethods = methods.filter((method) => method.type === 'write' && method.dangerLevel !== 'danger');
   const contractType = determineContractType(scores);
+  const requestedContractType = skillToContractType[input.requestedSkill];
   const recommendedSkill = recommendations[0] ?? 'unknown';
-  const skillMatch = recommendations.includes(input.requestedSkill);
+  const skillMatch = input.requestedSkill === 'auto' || recommendations.includes(input.requestedSkill) || Boolean(requestedContractType && requestedContractType === contractType);
   const warnings: string[] = [];
 
   if (!skillMatch) {

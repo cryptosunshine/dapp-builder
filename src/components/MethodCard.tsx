@@ -6,10 +6,38 @@ interface MethodCardProps {
   method: PageMethod;
   onRunMethod: (method: PageMethod, formValues: Record<string, string>) => void | Promise<void>;
   activeResult: MethodRunResult | null;
+  walletAccount?: string | null;
 }
 
 function getInputKey(input: AbiParameter, index: number) {
   return input.name?.trim() || `arg${index}`;
+}
+
+function shouldAutofillWallet(input: AbiParameter) {
+  const normalizedName = input.name?.trim().toLowerCase();
+  return input.type === 'address' && ['owner', 'account', 'from'].includes(normalizedName || '');
+}
+
+function getInputValue(input: AbiParameter, index: number, formValues: Record<string, string>, walletAccount?: string | null) {
+  const key = getInputKey(input, index);
+  if (formValues[key] !== undefined) {
+    return formValues[key];
+  }
+  if (walletAccount && shouldAutofillWallet(input)) {
+    return walletAccount;
+  }
+  return '';
+}
+
+function getEffectiveFormValues(method: PageMethod, formValues: Record<string, string>, walletAccount?: string | null) {
+  return method.inputs.reduce<Record<string, string>>((acc, input, index) => {
+    const key = getInputKey(input, index);
+    const value = getInputValue(input, index, formValues, walletAccount);
+    if (value !== '') {
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
 }
 
 function getResultText(result: MethodRunResult): string {
@@ -19,10 +47,14 @@ function getResultText(result: MethodRunResult): string {
   return parts.join('\n');
 }
 
-export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProps) {
+export function MethodCard({ method, onRunMethod, activeResult, walletAccount }: MethodCardProps) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const isActiveMethod = activeResult?.methodName === method.name;
+  const effectiveFormValues = useMemo(
+    () => getEffectiveFormValues(method, formValues, walletAccount),
+    [formValues, method, walletAccount],
+  );
   const buttonLabel = useMemo(() => {
     if (method.dangerLevel === 'danger') {
       return 'Run dangerous method';
@@ -60,7 +92,7 @@ export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProp
               <label key={`${method.name}-${key}`} className="field">
                 <span>{input.name || `Argument ${index + 1}`}</span>
                 <input
-                  value={formValues[key] ?? ''}
+                  value={getInputValue(input, index, formValues, walletAccount)}
                   onChange={(event) => setFormValues((current) => ({ ...current, [key]: event.target.value }))}
                   placeholder={input.type}
                 />
@@ -71,7 +103,7 @@ export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProp
       )}
 
       <div className="method-card__actions">
-        <button type="button" onClick={() => void onRunMethod(method, formValues)} className="primary-button">
+        <button type="button" onClick={() => void onRunMethod(method, effectiveFormValues)} className="primary-button">
           {buttonLabel}
         </button>
       </div>
@@ -82,7 +114,7 @@ export function MethodCard({ method, onRunMethod, activeResult }: MethodCardProp
             <span>{activeResult.message}</span>
             <div className="result-panel__actions">
               {activeResult.status === 'error' && (
-                <button type="button" className="retry-button" onClick={() => void onRunMethod(method, formValues)} title="Retry method call">
+                <button type="button" className="retry-button" onClick={() => void onRunMethod(method, effectiveFormValues)} title="Retry method call">
                   Retry
                 </button>
               )}

@@ -7,20 +7,21 @@ A thin full-stack MVP that turns a contract ABI into a usable dApp preview.
 1. Frontend collects:
    - contractAddress
    - chain
-   - skill
-   - model
-   - apiKey
+   - selected skills
+   - optional modelConfig
 2. Backend creates a task and processes it:
    - fetch ABI from ConfluxScan
-   - analyze contract shape
-   - detect skill fit
+   - analyze contract capabilities
+   - normalize selected skills
+   - build capability primitives
    - classify methods
    - flag dangerous/admin methods
-   - generate deterministic pageConfig
-   - call `hermes-agent` to generate the final pageConfig structure/copy from the safe ABI boundary
-   - optionally let an OpenAI-compatible model improve labels/descriptions
-   - store task result on disk
-3. Frontend polls task status and renders a dynamic preview page from pageConfig.
+   - generate deterministic pageConfig and experience fallback
+   - call `hermes-agent` for guided product experience generation
+   - validate agent output against deterministic methods and warnings
+   - optionally let an OpenAI-compatible model improve copy
+   - store task result on disk without API keys
+3. Frontend polls task status and renders a product-like preview from the validated experience schema.
 
 ## Supported chain
 
@@ -30,10 +31,22 @@ A thin full-stack MVP that turns a contract ABI into a usable dApp preview.
 
 ## Supported MVP skills
 
+Business:
+- auto
 - token-dashboard
-- nft-mint-page
-- claim-page
-- staking-page
+- nft-mint-experience
+- voting-participation
+
+Wallet:
+- injected-wallet
+- eip-6963-wallet-discovery
+- chain-switching
+
+Experience:
+- guided-flow
+- transaction-timeline
+- risk-explainer
+- explorer-links
 
 ## Tech stack
 
@@ -60,6 +73,10 @@ A thin full-stack MVP that turns a contract ABI into a usable dApp preview.
 - `server/routes/tasks.ts` — task create/get endpoints
 - `server/services/abi.ts` — ConfluxScan ABI fetch
 - `server/services/analyzer.ts` — deterministic ABI analysis + skill fit
+- `server/services/capabilities.ts` — capability primitive generation
+- `server/services/experience.ts` — deterministic experience fallback
+- `server/services/experience-validator.ts` — guided agent output validation
+- `server/services/skills.ts` — skill registry and normalization
 - `server/services/page-config.ts` — deterministic pageConfig safety boundary
 - `server/services/hermes-agent.ts` — hermes-agent subprocess integration for generated page output
 - `server/services/agent.ts` — task orchestration
@@ -77,19 +94,23 @@ The backend is deterministic-first, agent-generated second:
 - parse and validate task input
 - fetch ABI
 - analyze the ABI for contract capabilities and risky methods
-- build a deterministic `pageConfig` safety boundary
-- call `hermes-agent` with sanitized task/ABI/pageConfig context to generate final page structure and copy
-- optionally enhance copy with an OpenAI-compatible model if `apiKey` + `model` are present
+- normalize selected skills
+- build capability primitives
+- build deterministic `pageConfig` and `experience` safety boundaries
+- call `hermes-agent` with sanitized task, ABI, skills, capabilities, pageConfig, and experience context
+- validate generated experience before rendering
+- optionally enhance copy with an OpenAI-compatible model if `modelConfig.apiKey` + `modelConfig.model` are present
 - persist the task as JSON under `data/tasks/`
 
 The frontend is pageConfig-driven:
 - submit a task
 - poll `/api/tasks/:id`
 - render status changes (`queued`, `processing`, `completed`, `failed`)
-- render the preview directly from `pageConfig`
+- render the preview from `pageConfig.experience` when present
+- fall back to legacy pageConfig section rendering
 - run read/write methods through viem + injected wallet flow
 
-Important rule: deterministic ABI analysis stays the source of truth. Agent/LLM output can improve generated layout/copy, but must not override safety-critical methods, dangerous-method flags, or warnings.
+Important rule: deterministic ABI analysis stays the source of truth. Agent/LLM output can improve generated experience structure and copy, but must not override safety-critical methods, dangerous-method flags, or warnings.
 
 ### hermes-agent integration
 
@@ -99,7 +120,7 @@ The backend invokes `hermes-agent` during task execution after ABI analysis crea
 - `HERMES_AGENT_TIMEOUT_MS` — subprocess timeout, default `120000`
 - `HERMES_AGENT_MAX_BUFFER_BYTES` — stdout buffer cap, default `2000000`
 
-The submitted `apiKey` is never sent to the subprocess or persisted. If hermes-agent is unavailable or returns invalid JSON, the task still falls back to deterministic pageConfig generation.
+The submitted model API key is never sent to the subprocess or persisted. If hermes-agent is unavailable or returns invalid JSON, the task still falls back to deterministic pageConfig and experience generation.
 
 ## Install
 
@@ -162,7 +183,7 @@ npm run build
 1. `POST /api/tasks`
 2. server persists a queued task
 3. backend fetches ABI + analyzes the contract
-4. backend builds deterministic `pageConfig`, calls hermes-agent for generated page output, then safely merges allowed layout/copy
+4. backend builds deterministic `pageConfig` + `experience`, calls hermes-agent for guided experience output, then validates and safely merges allowed layout/copy
 5. task becomes `completed` or `failed`
 6. frontend polls `GET /api/tasks/:id`
 7. completed tasks render preview UI; failed tasks render recovery/error UX
@@ -179,9 +200,12 @@ Example body:
 {
   "contractAddress": "0x1234567890123456789012345678901234567890",
   "chain": "conflux-espace-testnet",
-  "skill": "claim-page",
-  "model": "gpt-5.4",
-  "apiKey": "***"
+  "skills": ["token-dashboard", "eip-6963-wallet-discovery", "guided-flow"],
+  "modelConfig": {
+    "baseUrl": "https://api.openai.com/v1",
+    "model": "gpt-5.4",
+    "apiKey": "***"
+  }
 }
 ```
 
@@ -210,9 +234,10 @@ The backend returns a pageConfig with:
 - `dangerousMethods`
 - `methods`
 - `sections`
+- `experience`
 - page title/description/contract metadata
 
-The frontend renders from this structure directly instead of inferring UI from raw ABI at render time.
+The frontend renders from `experience` first, then falls back to legacy sections. It never infers UI from raw ABI at render time.
 
 ## Notes
 

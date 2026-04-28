@@ -46,18 +46,14 @@ describe('BuilderForm', () => {
     expect(apiKeyInput).toHaveValue('');
   });
 
-  test('shows a description for the currently selected skill', async () => {
-    const user = userEvent.setup();
-
+  test('shows categorized skill options', () => {
     render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
 
-    // Default skill is token-dashboard
-    expect(screen.getByText(/View token balances/i)).toBeInTheDocument();
-
-    // Switching skill updates the description
-    const skillSelect = screen.getByLabelText(/skill/i);
-    await user.selectOptions(skillSelect, 'nft-mint-page');
-    expect(screen.getByText(/Mint NFTs/i)).toBeInTheDocument();
+    expect(screen.getByText(/Business direction/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Token dashboard/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/NFT mint experience/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/EIP-6963 wallet discovery/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Transaction timeline/i)).toBeInTheDocument();
   });
 
   test('shows deterministic mode helper copy when API key is blank without expanding the input name', () => {
@@ -87,10 +83,45 @@ describe('BuilderForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       contractAddress: '0x1234567890123456789012345678901234567890',
       chain: 'conflux-espace-testnet',
-      skill: 'token-dashboard',
+      skill: 'auto',
+      skills: ['auto', 'injected-wallet', 'guided-flow', 'risk-explainer'],
       model: 'gpt-5.4',
       apiKey: '',
+      modelConfig: {
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-5.4',
+        apiKey: '',
+      },
     });
+  });
+
+  test('submits selected skills and model config', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(<BuilderForm onSubmit={onSubmit} isSubmitting={false} />);
+
+    await user.clear(screen.getByLabelText(/contract address/i));
+    await user.type(screen.getByLabelText(/contract address/i), '0x1234567890123456789012345678901234567890');
+    await user.click(screen.getByLabelText(/Auto/i));
+    await user.click(screen.getByLabelText(/Token dashboard/i));
+    await user.click(screen.getByLabelText(/EIP-6963 wallet discovery/i));
+    await user.clear(screen.getByLabelText(/Base URL/i));
+    await user.type(screen.getByLabelText(/Base URL/i), 'https://api.openai.com/v1');
+    await user.clear(screen.getByLabelText(/^Model$/i));
+    await user.type(screen.getByLabelText(/^Model$/i), 'gpt-5.4');
+    await user.type(screen.getByLabelText(/API key/i), 'secret');
+    await user.click(screen.getByRole('button', { name: /generate dapp preview/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      contractAddress: '0x1234567890123456789012345678901234567890',
+      chain: 'conflux-espace-testnet',
+      skills: expect.arrayContaining(['token-dashboard', 'eip-6963-wallet-discovery', 'guided-flow']),
+      modelConfig: {
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-5.4',
+        apiKey: 'secret',
+      },
+    }));
   });
 
   test('shows a validation hint for invalid contract address format', async () => {
@@ -161,7 +192,7 @@ describe('BuilderForm', () => {
 
     render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
 
-    const chainSelect = screen.getByLabelText(/chain/i);
+    const chainSelect = screen.getByLabelText(/^chain$/i);
     expect(chainSelect).toBeInTheDocument();
 
     await user.hover(chainSelect);

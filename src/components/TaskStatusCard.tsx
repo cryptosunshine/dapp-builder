@@ -1,9 +1,11 @@
 import type { BuilderTask } from '../types';
 
-export function TaskStatusCard({ task }: { task: BuilderTask | null }) {
+export function TaskStatusCard({ task, surface = 'default' }: { task: BuilderTask | null; surface?: 'default' | 'builder-home' }) {
+  const surfaceClassName = surface === 'builder-home' ? ' status-card--builder-home' : '';
+
   if (!task) {
     return (
-      <div className="status-card">
+      <div className={`status-card${surfaceClassName}`}>
         <h3>No task yet</h3>
         <p>Submit a contract request to generate a preview.</p>
       </div>
@@ -13,7 +15,7 @@ export function TaskStatusCard({ task }: { task: BuilderTask | null }) {
   const previewHref = task.id && task.status !== 'failed' ? `/app/${task.id}` : null;
 
   return (
-    <div className={`status-card status-${task.status}`}>
+    <div className={`status-card status-${task.status}${surfaceClassName}`}>
       <h3>Task {task.id}</h3>
       <p>Status: {task.status}</p>
       {task.progress && <p>Stage: {task.progress}</p>}

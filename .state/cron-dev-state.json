@@ -1,9 +1,9 @@
 {
-  "active_branch": "master",
-  "active_pr_number": null,
-  "active_pr_url": "",
-  "current_focus": "All meaningful planned/product functionality complete. Non-blocking ideas only: clean existing act warnings and baseline npx tsc --noEmit test typing drift.",
-  "group_goal": "Complete",
+  "active_branch": "feat/richer-generated-dapp-ux",
+  "active_pr_number": 8,
+  "active_pr_url": "https://github.com/cryptosunshine/dapp-builder/pull/8",
+  "current_focus": "Shipped a generated-page identity slice: when explorer metadata is blank, contract naming now falls back to onchain name()/symbol(), hermes-agent runs through explicit CLI flags, and generated contract-specific method copy/danger sections survive deterministic merge; next likely slice: add a tiny focused regression + UI polish so generated task pages surface those richer labels/sections more prominently.",
+  "group_goal": "PR #8: richer generated dApp UX; keep reducing scan/ABI-dump feel through layout, button hierarchy, ERC20 wallet/transfer/approval product flows, and more contract-specific generated task-page output.",
   "handled_issue_comment_ids": [],
   "handled_review_ids": [
     "PRR_kwDOSIgRD874joNq",

@@ -71,4 +71,55 @@ describe('runBuilderAgent', () => {
     expect(result.pageConfig.description).toBe('Real agent generated page output');
     expect(result.methods.map((method) => method.name)).toEqual(expect.arrayContaining(['balanceOf', 'transfer']));
   });
+
+  test('builds capabilities, validates guided experience, and returns experience on pageConfig', async () => {
+    mockedFetchContractMetadata.mockResolvedValue({ abi: tokenAbi, contractName: 'MockToken', metadata: undefined });
+    mockedRunHermesAgentGeneration.mockImplementation(async ({ deterministicPageConfig, deterministicExperience }): Promise<AgentRunResult> => ({
+      summary: 'Guided token app generated.',
+      contractAnalysis: {
+        contractType: 'token',
+        recommendedSkill: 'token-dashboard',
+        readMethods: [],
+        writeMethods: [],
+        dangerousMethods: [],
+        warnings: deterministicExperience.warnings,
+      },
+      pageConfig: {
+        ...deterministicPageConfig,
+        experience: {
+          ...deterministicExperience,
+          title: 'Agent Designed Token Console',
+        },
+      },
+      experience: {
+        ...deterministicExperience,
+        title: 'Agent Designed Token Console',
+      },
+      status: 'success',
+      error: '',
+    }));
+
+    const result = await runBuilderAgent({
+      contractAddress: '0x1234567890123456789012345678901234567890',
+      chain: 'conflux-espace-testnet',
+      skills: ['token-dashboard', 'guided-flow', 'transaction-timeline'],
+      skill: 'token-dashboard',
+      model: 'gpt-5.4',
+      apiKey: '',
+      modelConfig: {
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-5.4',
+        apiKey: '',
+      },
+    });
+
+    expect(result.experience?.title).toBe('Agent Designed Token Console');
+    expect(result.pageConfig.experience?.components.map((component) => component.type)).toContain('flow');
+    expect(mockedRunHermesAgentGeneration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capabilities: expect.objectContaining({ kind: 'token' }),
+        deterministicExperience: expect.objectContaining({ template: 'token-dashboard' }),
+      }),
+    );
+  });
 });
