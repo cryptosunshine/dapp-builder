@@ -58,6 +58,23 @@ describe('WalletBar', () => {
     fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }));
     expect(onConnectWallet).toHaveBeenCalledTimes(1);
   });
+
+  test('can show discovered EIP-6963 wallets', () => {
+    render(
+      <WalletBar
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        chain={defaultChain}
+        wallets={[
+          { id: 'io.metamask', name: 'MetaMask' },
+          { id: 'com.rabby', name: 'Rabby' },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('MetaMask')).toBeInTheDocument();
+    expect(screen.getByText('Rabby')).toBeInTheDocument();
+  });
 });
 
 // ─── WarningBanner ──────────────────────────────────────────────────────────
@@ -131,6 +148,35 @@ describe('MethodCard', () => {
     expect(ownerInput).toBeInTheDocument();
     // label rendered from input name
     expect(screen.getByText('owner')).toBeInTheDocument();
+  });
+
+  test('prefills common wallet address inputs when a wallet account is connected', () => {
+    render(
+      <MethodCard
+        method={readMethod}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+        walletAccount="0xabcDEF0000000000000000000000000000001234"
+      />,
+    );
+
+    expect(screen.getByPlaceholderText('address')).toHaveValue('0xabcDEF0000000000000000000000000000001234');
+  });
+
+  test('submits autofilled wallet address inputs even if the user does not type into them', () => {
+    const onRunMethod = vi.fn();
+    render(
+      <MethodCard
+        method={readMethod}
+        onRunMethod={onRunMethod}
+        activeResult={null}
+        walletAccount="0xabcDEF0000000000000000000000000000001234"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /balance of/i }));
+
+    expect(onRunMethod).toHaveBeenCalledWith(readMethod, { owner: '0xabcDEF0000000000000000000000000000001234' });
   });
 
   test('renders input fields for multiple args with positional fallback names', () => {

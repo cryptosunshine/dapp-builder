@@ -1,7 +1,8 @@
-import { pageConfigSchema, type AnalyzeContractResult, type PageConfig } from '../../shared/schema.js';
+import { pageConfigSchema, type AnalyzeContractResult, type ModelConfig, type PageConfig } from '../../shared/schema.js';
 import { appConfig } from '../config.js';
 
 interface LlmEnhancementInput {
+  modelConfig?: ModelConfig;
   apiKey?: string;
   model?: string;
   analysis: AnalyzeContractResult;
@@ -58,20 +59,24 @@ function mergeSections(baseSections: PageConfig['sections'], incomingSections?: 
   });
 }
 
-export async function enhancePageConfigWithLlm({ apiKey, model, analysis, pageConfig }: LlmEnhancementInput) {
-  if (!apiKey || !model) {
+export async function enhancePageConfigWithLlm({ modelConfig, apiKey, model, analysis, pageConfig }: LlmEnhancementInput) {
+  const effectiveApiKey = modelConfig?.apiKey ?? apiKey;
+  const effectiveModel = modelConfig?.model ?? model;
+  const baseUrl = modelConfig?.baseUrl ?? appConfig.openAiBaseUrl;
+
+  if (!effectiveApiKey || !effectiveModel) {
     return null;
   }
 
   try {
-    const response = await fetch(`${appConfig.openAiBaseUrl}/chat/completions`, {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${effectiveApiKey}`,
       },
       body: JSON.stringify({
-        model,
+        model: effectiveModel,
         temperature: 0.2,
         messages: [
           {
@@ -109,6 +114,24 @@ export async function enhancePageConfigWithLlm({ apiKey, model, analysis, pageCo
       ...pageConfig,
       ...(patch.title ? { title: patch.title } : {}),
       ...(patch.description ? { description: patch.description } : {}),
+      ...(patch.experience && pageConfig.experience
+        ? {
+            experience: {
+              ...pageConfig.experience,
+              ...patch.experience,
+              components: pageConfig.experience?.components.map((component) => {
+                const incoming = patch.experience?.components?.find((entry) => entry.id === component.id);
+                if (!incoming) return component;
+                return {
+                  ...component,
+                  ...(incoming.title ? { title: incoming.title } : {}),
+                  ...(incoming.description ? { description: incoming.description } : {}),
+                };
+              }) ?? pageConfig.experience?.components,
+              warnings: pageConfig.experience?.warnings ?? [],
+            },
+          }
+        : {}),
       warnings: mergeWarnings(pageConfig.warnings, patch.warnings),
       sections: mergeSections(pageConfig.sections, patch.sections),
       methods: mergeMethods(pageConfig.methods, patch.methods),
