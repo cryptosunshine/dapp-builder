@@ -6,3 +6,4 @@ coverage
 .env
 .env.*
 data/tasks
+data/generated-dapps

@@ -39,7 +39,17 @@ export const experienceSkills = [
 export const promptTaskStatuses = ['pending', 'running', 'success', 'failed'] as const;
 export const legacyTaskStatuses = ['queued', 'processing', 'completed', 'failed'] as const;
 export const allTaskStatuses = ['pending', 'running', 'success', 'queued', 'processing', 'completed', 'failed'] as const;
-export const taskProgressStages = ['pending', 'fetching_abi', 'analyzing_contract', 'generating_page_config', 'completed'] as const;
+export const taskProgressStages = [
+  'pending',
+  'fetching_abi',
+  'analyzing_contract',
+  'product_planning',
+  'experience_design',
+  'frontend_generation',
+  'validating_generated_app',
+  'generating_page_config',
+  'completed',
+] as const;
 
 export type ChainKey = (typeof supportedChains)[number];
 export type ChainId = (typeof supportedChainIds)[number];
@@ -269,6 +279,34 @@ export const analysisSummarySchema = z.object({
   warnings: z.array(z.string()).optional(),
 });
 
+export const agentDocumentSchema = z.object({
+  role: z.enum(['product-manager', 'designer']),
+  title: z.string().min(1),
+  markdown: z.string().min(1),
+});
+
+export const generatedAppFileSchema = z.object({
+  path: z.string().min(1),
+  content: z.string(),
+});
+
+export const generatedFrontendAppSchema = z.object({
+  summary: z.string().min(1),
+  files: z.array(generatedAppFileSchema).min(3),
+});
+
+export const generatedAppArtifactSchema = z.object({
+  taskId: z.string().min(1),
+  sourceDir: z.string().min(1),
+  distDir: z.string().min(1),
+  previewUrl: z.string().min(1),
+  buildStatus: z.enum(['success', 'failed', 'skipped']),
+  productPlan: agentDocumentSchema,
+  designSpec: agentDocumentSchema,
+  frontendSummary: z.string().default(''),
+  validationWarnings: z.array(z.string()).default([]),
+});
+
 export const agentRunResultSchema = z.object({
   summary: z.string(),
   contractAnalysis: analysisSummarySchema.extend({
@@ -289,6 +327,7 @@ export const builderTaskResultSchema = z.object({
   sections: z.array(pageSectionSchema).default([]),
   pageConfig: pageConfigSchema,
   experience: experienceSchema.optional(),
+  generatedApp: generatedAppArtifactSchema.optional(),
   analysis: analysisSummarySchema.optional(),
   summary: z.string().optional(),
   status: z.enum(['success', 'failed']).optional(),
@@ -336,6 +375,10 @@ export type ExperienceComponentType = z.infer<typeof experienceComponentTypeSche
 export type ExperienceComponent = z.infer<typeof experienceComponentSchema>;
 export type Experience = z.infer<typeof experienceSchema>;
 export type PageConfig = z.infer<typeof pageConfigSchema>;
+export type AgentDocument = z.infer<typeof agentDocumentSchema>;
+export type GeneratedAppFile = z.infer<typeof generatedAppFileSchema>;
+export type GeneratedFrontendApp = z.infer<typeof generatedFrontendAppSchema>;
+export type GeneratedAppArtifact = z.infer<typeof generatedAppArtifactSchema>;
 export type BuilderTaskResult = z.infer<typeof builderTaskResultSchema>;
 export type BuilderTask = z.infer<typeof builderTaskSchema>;
 export type AnalysisSummary = z.infer<typeof analysisSummarySchema>;

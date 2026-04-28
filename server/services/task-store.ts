@@ -17,6 +17,8 @@ interface TaskStoreOptions {
 
 interface TaskUpdate {
   status?: BuilderTask['status'];
+  progress?: BuilderTask['progress'];
+  summary?: string;
   result?: BuilderTaskResult;
   error?: string;
 }
@@ -85,6 +87,8 @@ export function createTaskStore({ dataDir }: TaskStoreOptions) {
       ...existingTask,
       updatedAt: new Date().toISOString(),
       ...(patch.status ? { status: patch.status } : {}),
+      ...(patch.progress ? { progress: patch.progress } : {}),
+      ...(patch.summary !== undefined ? { summary: patch.summary } : {}),
       ...(patch.error !== undefined ? { error: patch.error } : {}),
       ...(patch.result ? { result: builderTaskResultSchema.parse(patch.result) } : {}),
     };

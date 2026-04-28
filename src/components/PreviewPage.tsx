@@ -17,6 +17,7 @@ interface PreviewPageProps {
 
 export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, activeResult }: PreviewPageProps) {
   const pageConfig = task.result?.pageConfig;
+  const generatedApp = task.result?.generatedApp;
   const [methodFilter, setMethodFilter] = useState<'all' | 'read' | 'write' | 'danger'>('all');
   const [wallets, setWallets] = useState<DiscoveredWallet[]>([]);
   const [expandedAdvancedSections, setExpandedAdvancedSections] = useState<Record<string, boolean>>({});
@@ -25,6 +26,19 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
     if (!pageConfig?.skills?.includes('eip-6963-wallet-discovery')) return;
     void discoverEip6963Wallets().then(setWallets);
   }, [pageConfig?.skills]);
+
+  if (generatedApp?.previewUrl) {
+    return (
+      <div className="generated-app-frame-shell">
+        <iframe
+          className="generated-app-frame"
+          src={generatedApp.previewUrl}
+          title="Agent generated dApp preview"
+          sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
+        />
+      </div>
+    );
+  }
 
   if (!pageConfig) {
     return <div className="empty-state">No pageConfig is available yet for this task.</div>;

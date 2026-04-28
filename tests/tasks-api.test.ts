@@ -121,6 +121,11 @@ describe('tasks API', () => {
       expect(JSON.stringify(detail)).not.toContain('secret-api-key');
       expect(mockedRunBuilderAgent).toHaveBeenCalledWith(
         expect.objectContaining({ apiKey: 'secret-api-key' }),
+        expect.objectContaining({
+          taskId: createdTask.id,
+          generatedAppsDir: expect.any(String),
+          onProgress: expect.any(Function),
+        }),
       );
     } finally {
       await new Promise<void>((resolve, reject) => {
@@ -172,7 +177,50 @@ describe('tasks API', () => {
           skills: ['token-dashboard', 'eip-6963-wallet-discovery', 'guided-flow'],
           modelConfig: expect.objectContaining({ apiKey: 'secret' }),
         }),
+        expect.objectContaining({
+          taskId: createdTask.id,
+          onProgress: expect.any(Function),
+        }),
       );
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    }
+  });
+
+  test('persists agent stage progress reported by runBuilderAgent', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-api-'));
+    cleanupPaths.push(dataDir);
+    mockedRunBuilderAgent.mockImplementation(async (_input, options) => {
+      await options?.onProgress?.('product_planning', 'PM agent is designing the product flow.');
+      throw new Error('stop after progress');
+    });
+
+    const server = await createServer(dataDir);
+
+    try {
+      const address = server.address() as AddressInfo;
+      const baseUrl = `http://127.0.0.1:${address.port}`;
+
+      const createResponse = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+      const createdTask = await createResponse.json();
+      const detail = await waitForTask(baseUrl, createdTask.id);
+
+      expect(detail).toMatchObject({
+        id: createdTask.id,
+        status: 'failed',
+        progress: 'product_planning',
+        summary: 'PM agent is designing the product flow.',
+        error: 'stop after progress',
+      });
     } finally {
       await new Promise<void>((resolve, reject) => {
         server.close((error) => {

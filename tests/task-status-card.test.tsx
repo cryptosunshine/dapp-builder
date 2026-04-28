@@ -48,6 +48,25 @@ describe('TaskStatusCard', () => {
     expect(screen.getByText('Fetching contract ABI from ConfluxScan.')).toBeInTheDocument();
   });
 
+  test('renders a generation stepper with the current agent stage highlighted', () => {
+    render(
+      <TaskStatusCard
+        task={{
+          ...task,
+          progress: 'frontend_generation',
+          summary: 'Frontend agent is generating the React dApp source.',
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText(/dapp generation progress/i)).toBeInTheDocument();
+    expect(screen.getByText('Product plan')).toBeInTheDocument();
+    expect(screen.getByText('Design')).toBeInTheDocument();
+    expect(screen.getByText('React app')).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByText('Build')).toBeInTheDocument();
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
   test('does not render a raw task json link that could expose sensitive fields', () => {
     render(<TaskStatusCard task={task} />);
 
