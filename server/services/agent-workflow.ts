@@ -369,6 +369,135 @@ Context:
 ${buildSharedContext(input)}`);
 }
 
+function safeJsonForSource(value: unknown) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
+function createFallbackFrontendApp(
+  input: RunAgentGeneratedDappWorkflowInput,
+  productPlan: AgentDocument,
+  designSpec: AgentDocument,
+  error: unknown,
+): GeneratedFrontendApp {
+  const methods = compactMethods(input.analysis.methods);
+  const reads = methods.filter((method) => method.type === 'read').slice(0, 6);
+  const writes = methods.filter((method) => method.type === 'write').slice(0, 4);
+  const title = input.analysis.contractName
+    ? `${input.analysis.contractName} ${input.analysis.contractType === 'nft' ? 'Collection' : 'Workspace'}`
+    : 'Generated dApp Workspace';
+  const sourceData = {
+    title,
+    contractAddress: input.input.contractAddress,
+    chain: input.analysis.chain,
+    contractType: input.analysis.contractType,
+    productPlan: truncateText(productPlan.markdown, 700),
+    designSpec: truncateText(designSpec.markdown, 700),
+    reads,
+    writes,
+    warnings: input.analysis.warnings.slice(0, 4),
+    failedReason: describeAgentApiError(error),
+  };
+
+  const appSource = `import React from 'react';
+import { createRoot } from 'react-dom/client';
+
+const data = ${safeJsonForSource(sourceData)};
+
+function MethodList({ title, methods }) {
+  if (!methods.length) return null;
+  return (
+    <section className="panel">
+      <div className="section-kicker">{title}</div>
+      <div className="method-grid">
+        {methods.map((method) => (
+          <div className="method" key={method.name}>
+            <span>{method.type}</span>
+            <strong>{method.label}</strong>
+            <small>{method.inputs.map((input) => input.type).join(', ') || 'No inputs'}</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function App() {
+  return (
+    <main className="shell">
+      <section className="hero">
+        <div>
+          <p className="eyebrow">{data.contractType} dApp</p>
+          <h1>{data.title}</h1>
+          <p className="summary">Agent planning completed. This MVP interface was generated locally after the frontend agent timed out.</p>
+        </div>
+        <div className="address">
+          <span>Contract</span>
+          <code>{data.contractAddress}</code>
+          <small>{data.chain}</small>
+        </div>
+      </section>
+      <section className="workspace">
+        <div className="primary">
+          <div className="section-kicker">Primary flow</div>
+          <h2>{data.writes.length ? data.writes[0].label : 'Review contract state'}</h2>
+          <p>{data.productPlan.replace(/^#+\\s*/gm, '').split('\\n').filter(Boolean)[0] || 'Connect a wallet and review the available contract interactions.'}</p>
+          <button type="button">Connect wallet</button>
+        </div>
+        <aside>
+          <div className="section-kicker">Safety</div>
+          <p>{data.designSpec.replace(/^#+\\s*/gm, '').split('\\n').filter(Boolean)[0] || 'Review every transaction before signing.'}</p>
+          <ul>
+            {(data.warnings.length ? data.warnings : ['Confirm network and wallet before write actions.']).map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </aside>
+      </section>
+      <MethodList title="Read actions" methods={data.reads} />
+      <MethodList title="Write actions" methods={data.writes} />
+    </main>
+  );
+}
+
+const style = document.createElement('style');
+style.textContent = \`
+  :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0b1020; color: #eef3ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top left, #1b365d 0, transparent 34rem), #0b1020; }
+  .shell { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0; }
+  .hero, .workspace, .panel { border: 1px solid rgba(255,255,255,.12); background: rgba(15,23,42,.82); box-shadow: 0 24px 80px rgba(0,0,0,.28); }
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 28px; align-items: end; padding: 36px; border-radius: 28px; }
+  .eyebrow, .section-kicker { margin: 0 0 10px; color: #7dd3fc; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 800; }
+  h1 { margin: 0; font-size: clamp(38px, 6vw, 74px); line-height: .95; letter-spacing: 0; }
+  h2 { margin: 0 0 12px; font-size: 30px; letter-spacing: 0; }
+  p { color: #cbd5e1; line-height: 1.6; }
+  .summary { max-width: 620px; font-size: 17px; }
+  .address, aside, .primary, .method { border-radius: 20px; background: rgba(2,6,23,.64); padding: 22px; }
+  .address code { display: block; margin: 10px 0; overflow-wrap: anywhere; color: #f8fafc; }
+  .address span, .address small, .method small, .method span { color: #94a3b8; }
+  .workspace { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr); gap: 18px; margin-top: 22px; padding: 18px; border-radius: 28px; }
+  button { border: 0; border-radius: 999px; padding: 13px 20px; color: #06111f; background: #67e8f9; font-weight: 800; }
+  ul { margin: 0; padding-left: 18px; color: #cbd5e1; line-height: 1.7; }
+  .panel { margin-top: 22px; padding: 24px; border-radius: 24px; }
+  .method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .method { display: grid; gap: 8px; }
+  .method strong { color: #f8fafc; }
+  @media (max-width: 820px) { .hero, .workspace { grid-template-columns: 1fr; } .shell { padding-top: 24px; } }
+\`;
+document.head.appendChild(style);
+createRoot(document.getElementById('root')).render(<App />);
+`;
+
+  return generatedFrontendAppSchema.parse({
+    summary: `Generated deterministic fallback React app after frontend agent failed: ${describeAgentApiError(error)}`,
+    files: [
+      { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"},"dependencies":{"@vitejs/plugin-react":"^4.4.1","vite":"^6.3.5","typescript":"^5.8.3","react":"^18.3.1","react-dom":"^18.3.1"}}' },
+      { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+      { path: 'src/App.jsx', content: appSource },
+    ],
+  });
+}
+
 async function reportProgress(
   onProgress: RunAgentGeneratedDappWorkflowInput['onProgress'],
   progress: TaskProgress,
@@ -395,11 +524,16 @@ export async function runAgentGeneratedDappWorkflow(input: RunAgentGeneratedDapp
   }), 'designer', 'Generated dApp design');
 
   await reportProgress(input.onProgress, 'frontend_generation', 'Frontend agent is generating the React dApp source.');
-  const frontendApp: GeneratedFrontendApp = coerceGeneratedFrontendApp(await invokeAgent({
-    stage: 'frontend_generation',
-    prompt: buildFrontendPrompt(input, productPlan, designSpec),
-    input: input.input,
-  }));
+  let frontendApp: GeneratedFrontendApp;
+  try {
+    frontendApp = coerceGeneratedFrontendApp(await invokeAgent({
+      stage: 'frontend_generation',
+      prompt: buildFrontendPrompt(input, productPlan, designSpec),
+      input: input.input,
+    }));
+  } catch (error) {
+    frontendApp = createFallbackFrontendApp(input, productPlan, designSpec, error);
+  }
 
   await reportProgress(input.onProgress, 'validating_generated_app', 'Writing and validating the generated React app.');
   return createGeneratedAppArtifact({

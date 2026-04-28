@@ -80,13 +80,12 @@ async function buildGeneratedApp(sourceDir: string, distDir: string) {
   await execFileAsync(process.execPath, [
     viteBin,
     'build',
-    '--root',
-    sourceDir,
+    '.',
     '--outDir',
     distDir,
     '--emptyOutDir',
   ], {
-    cwd: process.cwd(),
+    cwd: sourceDir,
     timeout: 120_000,
     maxBuffer: 2_000_000,
   });

@@ -176,4 +176,64 @@ describe('agent generated dApp workflow', () => {
 
     expect(Math.max(...promptLengths)).toBeLessThan(18_000);
   });
+
+  test('falls back to a deterministic React app when the frontend agent times out', async () => {
+    const rootDir = await mkdtemp(join(process.cwd(), '.agent-workflow-frontend-fallback-'));
+    cleanupPaths.push(rootDir);
+    const seenStages: string[] = [];
+
+    const artifact = await runAgentGeneratedDappWorkflow({
+      taskId: 'task-frontend-fallback',
+      rootDir,
+      input,
+      abi: [],
+      analysis: {
+        ...analysis,
+        contractType: 'nft',
+        methods: [
+          {
+            name: 'safeMint',
+            label: 'Safe Mint',
+            type: 'write',
+            dangerLevel: 'warn',
+            stateMutability: 'nonpayable',
+            inputs: [{ name: 'to', type: 'address' }],
+            outputs: [],
+            description: 'Mint from the collection.',
+          },
+          {
+            name: 'ownerOf',
+            label: 'Owner Of',
+            type: 'read',
+            dangerLevel: 'safe',
+            stateMutability: 'view',
+            inputs: [{ name: 'tokenId', type: 'uint256' }],
+            outputs: [{ name: '', type: 'address' }],
+            description: 'Check token ownership.',
+          },
+        ],
+      },
+      capabilities: { kind: 'nft', confidence: 1, primitives: [], unsupported: [] },
+      normalizedSkills: { skills: ['nft-mint-experience'], businessSkills: ['nft-mint-experience'], walletSkills: [], experienceSkills: [], diagnostics: [] },
+      build: true,
+      invokeAgent: async ({ stage }) => {
+        seenStages.push(stage);
+        if (stage === 'product_planning') {
+          return { role: 'product-manager', title: 'Mint flow', markdown: '# Mint flow\n\nGuide users to mint and review ownership.' };
+        }
+        if (stage === 'experience_design') {
+          return { role: 'designer', title: 'Collection workspace', markdown: '# Collection workspace\n\nUse a focused mint panel and safety rail.' };
+        }
+        const error = new Error('This operation was aborted');
+        error.name = 'AbortError';
+        throw error;
+      },
+    });
+
+    expect(seenStages).toEqual(['product_planning', 'experience_design', 'frontend_generation']);
+    expect(artifact.frontendSummary).toContain('fallback');
+    expect(artifact.buildStatus).toBe('success');
+    expect(artifact.productPlan.markdown).toContain('mint');
+    expect(artifact.designSpec.markdown).toContain('safety rail');
+  });
 });
