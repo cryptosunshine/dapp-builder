@@ -41,4 +41,32 @@ describe('createTaskStore', () => {
     expect(JSON.stringify(listedTasks)).not.toContain('secret-api-key');
     expect(rawFile).not.toContain('secret-api-key');
   });
+
+  test('does not persist modelConfig apiKey', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-store-'));
+    cleanupPaths.push(dataDir);
+
+    const store = createTaskStore({ dataDir });
+    const task = await store.createTask({
+      contractAddress: '0x1234567890123456789012345678901234567890',
+      chain: 'conflux-espace-testnet',
+      skills: ['auto', 'explorer-links'],
+      skill: 'auto',
+      model: 'gpt-5.4',
+      apiKey: 'legacy-secret',
+      modelConfig: {
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-5.4',
+        apiKey: 'model-secret',
+      },
+    });
+
+    const persisted = await store.getTask(task.id!);
+    expect(JSON.stringify(persisted)).not.toContain('model-secret');
+    expect(JSON.stringify(persisted)).not.toContain('legacy-secret');
+    expect(persisted?.input).toMatchObject({
+      skills: ['auto', 'explorer-links'],
+      modelConfig: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-5.4' },
+    });
+  });
 });

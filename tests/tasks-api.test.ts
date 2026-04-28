@@ -131,4 +131,55 @@ describe('tasks API', () => {
       });
     }
   });
+
+  test('creates a task with multi-select skills and sanitized model config', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-api-'));
+    cleanupPaths.push(dataDir);
+    mockedRunBuilderAgent.mockResolvedValue(agentResult);
+
+    const server = await createServer(dataDir);
+
+    try {
+      const address = server.address() as AddressInfo;
+      const baseUrl = `http://127.0.0.1:${address.port}`;
+
+      const createResponse = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contractAddress: '0x1234567890123456789012345678901234567890',
+          chain: 'conflux-espace-testnet',
+          skills: ['token-dashboard', 'eip-6963-wallet-discovery', 'guided-flow'],
+          modelConfig: {
+            baseUrl: 'https://api.openai.com/v1',
+            model: 'gpt-5.4',
+            apiKey: 'secret',
+          },
+        }),
+      });
+      const createdTask = await createResponse.json();
+
+      expect(createResponse.status).toBe(202);
+      expect(createdTask.input.skills).toEqual(['token-dashboard', 'eip-6963-wallet-discovery', 'guided-flow']);
+      expect(createdTask.input.modelConfig).toEqual({
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-5.4',
+      });
+      expect(JSON.stringify(createdTask)).not.toContain('secret');
+      await waitForTask(baseUrl, createdTask.id);
+      expect(mockedRunBuilderAgent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skills: ['token-dashboard', 'eip-6963-wallet-discovery', 'guided-flow'],
+          modelConfig: expect.objectContaining({ apiKey: 'secret' }),
+        }),
+      );
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    }
+  });
 });
