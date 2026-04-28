@@ -1,11 +1,21 @@
-import type { AnalyzeContractResult, ChainKey, PageConfig, PageMethod, PageSection, SkillName } from '../../shared/schema.js';
+import type { AnalyzeContractResult, ChainKey, Experience, PageConfig, PageMethod, PageSection, SkillName } from '../../shared/schema.js';
 
 const chainIdByKey: Record<ChainKey, number> = {
   'conflux-espace-testnet': 71,
 };
 
 const skillLabels: Record<SkillName, string> = {
+  'auto': 'Auto dApp',
   'token-dashboard': 'Token Dashboard',
+  'nft-mint-experience': 'NFT Mint Experience',
+  'voting-participation': 'Voting App',
+  'injected-wallet': 'Injected Wallet',
+  'eip-6963-wallet-discovery': 'Wallet Discovery',
+  'chain-switching': 'Chain Switching',
+  'guided-flow': 'Guided Flow',
+  'transaction-timeline': 'Transaction Timeline',
+  'risk-explainer': 'Risk Explainer',
+  'explorer-links': 'Explorer Links',
   'nft-mint-page': 'NFT Mint Page',
   'claim-page': 'Claim Page',
   'staking-page': 'Staking Page',
@@ -26,7 +36,7 @@ function pickSkill(analysis: AnalyzeContractResult): SkillName {
   return analysis.recommendedSkills?.[0] ?? analysis.requestedSkill;
 }
 
-export function buildPageConfig(analysis: AnalyzeContractResult): PageConfig {
+export function buildPageConfig(analysis: AnalyzeContractResult, experience?: Experience): PageConfig {
   const skill = pickSkill(analysis);
   const safeReadMethods = uniqueMethods(
     analysis.readMethods ?? analysis.methods.filter((method) => method.type === 'read' && method.dangerLevel !== 'danger'),
@@ -90,9 +100,11 @@ export function buildPageConfig(analysis: AnalyzeContractResult): PageConfig {
     contractAddress: analysis.contractAddress,
     contractName: analysis.contractName,
     skill,
+    skills: [skill],
     warnings: analysis.warnings,
     dangerousMethods,
     methods: safeMethods,
     sections,
+    experience,
   };
 }
