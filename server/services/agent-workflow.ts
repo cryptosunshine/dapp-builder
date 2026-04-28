@@ -56,6 +56,34 @@ function parseJsonFromAgent(stdout: string): unknown {
   throw new Error('Agent did not return valid JSON.');
 }
 
+function parseJsonIfPresent(value: unknown): unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  try {
+    return parseJsonFromAgent(value);
+  } catch {
+    return value;
+  }
+}
+
+function coerceAgentDocument(value: unknown, role: AgentDocument['role'], title: string): AgentDocument {
+  const parsed = parseJsonIfPresent(value);
+  if (typeof parsed === 'string') {
+    return agentDocumentSchema.parse({
+      role,
+      title,
+      markdown: parsed.trim() || title,
+    });
+  }
+  return agentDocumentSchema.parse(parsed);
+}
+
+function coerceGeneratedFrontendApp(value: unknown): GeneratedFrontendApp {
+  return generatedFrontendAppSchema.parse(parseJsonIfPresent(value));
+}
+
 function resolveAgentInvocation(input: BuilderTaskInput, prompt: string): { command: string; args: string[] } {
   const command = appConfig.hermesAgentCommand;
   const modelConfig = input.modelConfig;
@@ -116,11 +144,7 @@ async function defaultInvokeAgent({ input, prompt }: InvokeAgentInput): Promise<
           reject(error);
           return;
         }
-        try {
-          resolvePromise(parseJsonFromAgent(stdout.toString()));
-        } catch (parseError) {
-          reject(parseError);
-        }
+        resolvePromise(parseJsonIfPresent(stdout.toString()));
       },
     );
   });
@@ -188,21 +212,21 @@ export async function runAgentGeneratedDappWorkflow(input: RunAgentGeneratedDapp
   const invokeAgent = input.invokeAgent ?? defaultInvokeAgent;
 
   await reportProgress(input.onProgress, 'product_planning', 'PM agent is designing the product flow.');
-  const productPlan = agentDocumentSchema.parse(await invokeAgent({
+  const productPlan = coerceAgentDocument(await invokeAgent({
     stage: 'product_planning',
     prompt: buildProductPrompt(input),
     input: input.input,
-  }));
+  }), 'product-manager', 'Product flow');
 
   await reportProgress(input.onProgress, 'experience_design', 'Designer agent is defining the page structure and interactions.');
-  const designSpec = agentDocumentSchema.parse(await invokeAgent({
+  const designSpec = coerceAgentDocument(await invokeAgent({
     stage: 'experience_design',
     prompt: buildDesignPrompt(input, productPlan),
     input: input.input,
-  }));
+  }), 'designer', 'Generated dApp design');
 
   await reportProgress(input.onProgress, 'frontend_generation', 'Frontend agent is generating the React dApp source.');
-  const frontendApp: GeneratedFrontendApp = generatedFrontendAppSchema.parse(await invokeAgent({
+  const frontendApp: GeneratedFrontendApp = coerceGeneratedFrontendApp(await invokeAgent({
     stage: 'frontend_generation',
     prompt: buildFrontendPrompt(input, productPlan, designSpec),
     input: input.input,

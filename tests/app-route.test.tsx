@@ -92,6 +92,7 @@ describe('App route aliases', () => {
     });
 
     expect(screen.getByText(/adjust the contract or inputs and submit a new task/i)).toBeInTheDocument();
+    expect(screen.getByText(/task failed before a preview could be generated/i).closest('.empty-state')).toHaveClass('empty-state--preview-error');
     expect(screen.queryByRole('link', { name: /open shareable preview/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/preview will appear when the backend finishes processing the task/i)).not.toBeInTheDocument();
   });

@@ -78,4 +78,33 @@ describe('agent generated dApp workflow', () => {
     expect(artifact.productPlan.markdown).toContain('balance');
     expect(artifact.designSpec.markdown).toContain('Aave-like');
   });
+
+  test('accepts non-json PM and designer markdown so agent formatting drift does not fail the task', async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-'));
+    cleanupPaths.push(rootDir);
+
+    const artifact = await runAgentGeneratedDappWorkflow({
+      taskId: 'task-agent-markdown',
+      rootDir,
+      input,
+      abi: [],
+      analysis,
+      capabilities: { kind: 'token', confidence: 0.9, primitives: [], unsupported: [] },
+      normalizedSkills: { skills: ['token-dashboard'], businessSkills: ['token-dashboard'], walletSkills: [], experienceSkills: [], diagnostics: [] },
+      build: false,
+      invokeAgent: async ({ stage }) => {
+        if (stage === 'product_planning') {
+          return '# Token PM flow\n\nThis token page should focus on balance, transfer, and approval tasks.';
+        }
+        if (stage === 'experience_design') {
+          return 'Design direction: a focused asset workspace with action tabs and a clear risk rail.';
+        }
+        return '```json\n{"summary":"Generated React token dashboard.","files":[{"path":"package.json","content":"{\\"type\\":\\"module\\",\\"scripts\\":{\\"build\\":\\"vite build\\"}}"},{"path":"index.html","content":"<div id=\\"root\\"></div><script type=\\"module\\" src=\\"/src/App.jsx\\"></script>"},{"path":"src/App.jsx","content":"export default function App(){ return <main>Agent token dashboard</main>; }"}]}\n```';
+      },
+    });
+
+    expect(artifact.productPlan.markdown).toContain('Token PM flow');
+    expect(artifact.designSpec.markdown).toContain('asset workspace');
+    expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
+  });
 });

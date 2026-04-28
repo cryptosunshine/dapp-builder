@@ -545,6 +545,14 @@ button {
   border-color: rgba(155, 184, 226, 0.22);
 }
 
+.page-shell--stack .empty-state--preview-error {
+  width: min(1280px, 100%);
+  padding: 22px 24px;
+  color: #ffecef;
+  background: linear-gradient(135deg, #3a2630 0%, #211829 100%);
+  border-color: rgba(255, 159, 178, 0.28);
+}
+
 .hero-card,
 .wallet-bar,
 .status-card,
