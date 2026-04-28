@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { runAgentGeneratedDappWorkflow } from '../server/services/agent-workflow';
-import type { AnalyzeContractResult, BuilderTaskInput } from '../shared/schema';
+import type { AbiEntry, AnalyzeContractResult, BuilderTaskInput } from '../shared/schema';
 
 const cleanupPaths: string[] = [];
 
@@ -106,5 +106,74 @@ describe('agent generated dApp workflow', () => {
     expect(artifact.productPlan.markdown).toContain('Token PM flow');
     expect(artifact.designSpec.markdown).toContain('asset workspace');
     expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
+  });
+
+  test('keeps agent prompts bounded so large ABIs do not exceed spawn argument limits', async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-'));
+    cleanupPaths.push(rootDir);
+    const largeAbi: AbiEntry[] = Array.from({ length: 500 }, (_, index) => ({
+      type: 'function',
+      name: `method${index}`,
+      stateMutability: index % 3 === 0 ? 'view' : 'nonpayable',
+      inputs: [
+        { name: 'account', type: 'address' },
+        { name: 'amount', type: 'uint256' },
+      ],
+      outputs: [{ name: '', type: 'uint256' }],
+    }));
+    const promptLengths: number[] = [];
+
+    await runAgentGeneratedDappWorkflow({
+      taskId: 'task-large-prompt',
+      rootDir,
+      input,
+      abi: largeAbi,
+      analysis: {
+        ...analysis,
+        methods: largeAbi.map((entry) => ({
+          name: entry.name!,
+          label: entry.name!,
+          type: entry.stateMutability === 'view' ? 'read' : 'write',
+          dangerLevel: 'safe',
+          stateMutability: entry.stateMutability!,
+          inputs: entry.inputs,
+          outputs: entry.outputs,
+          description: `Generated method ${entry.name}`,
+        })),
+      },
+      capabilities: {
+        kind: 'token',
+        confidence: 0.9,
+        primitives: Array.from({ length: 120 }, (_, index) => ({
+          id: `primitive-${index}`,
+          label: `Primitive ${index}`,
+          description: `Primitive ${index} description`,
+          methodNames: [`method${index}`],
+          required: false,
+        })),
+        unsupported: Array.from({ length: 80 }, (_, index) => `Unsupported capability ${index}`),
+      },
+      normalizedSkills: { skills: ['token-dashboard'], businessSkills: ['token-dashboard'], walletSkills: [], experienceSkills: [], diagnostics: [] },
+      build: false,
+      invokeAgent: async ({ stage, prompt }) => {
+        promptLengths.push(prompt.length);
+        if (stage === 'product_planning') {
+          return '# Token PM flow\n\n'.concat('Use product flows, not scans. '.repeat(3000));
+        }
+        if (stage === 'experience_design') {
+          return '# Token design\n\n'.concat('Use a calm asset workspace. '.repeat(3000));
+        }
+        return {
+          summary: 'Generated React token dashboard.',
+          files: [
+            { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
+            { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+            { path: 'src/App.jsx', content: 'export default function App(){ return <main>Agent token dashboard</main>; }' },
+          ],
+        };
+      },
+    });
+
+    expect(Math.max(...promptLengths)).toBeLessThan(60_000);
   });
 });

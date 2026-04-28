@@ -19,6 +19,9 @@ import { createGeneratedAppArtifact } from './generated-apps.js';
 import type { NormalizedSkills } from './skills.js';
 
 type AgentStage = 'product_planning' | 'experience_design' | 'frontend_generation';
+const maxPromptLength = 55_000;
+const maxDocumentLength = 6_000;
+const maxContextMethods = 80;
 
 interface InvokeAgentInput {
   stage: AgentStage;
@@ -82,6 +85,70 @@ function coerceAgentDocument(value: unknown, role: AgentDocument['role'], title:
 
 function coerceGeneratedFrontendApp(value: unknown): GeneratedFrontendApp {
   return generatedFrontendAppSchema.parse(parseJsonIfPresent(value));
+}
+
+function truncateText(value: string, maxLength = maxDocumentLength) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+  return `${value.slice(0, maxLength)}\n\n[Truncated ${value.length - maxLength} characters to keep the agent prompt within process limits.]`;
+}
+
+function compactAbi(abi: AbiEntry[]) {
+  return abi.slice(0, maxContextMethods).map((entry) => ({
+    type: entry.type,
+    name: entry.name,
+    stateMutability: entry.stateMutability,
+    inputs: entry.inputs.map((input) => ({ name: input.name, type: input.type })),
+    outputs: entry.outputs.map((output) => ({ name: output.name, type: output.type })),
+  }));
+}
+
+function compactMethods(methods: AnalyzeContractResult['methods']) {
+  return methods.slice(0, maxContextMethods).map((method) => ({
+    name: method.name,
+    label: method.label,
+    type: method.type,
+    dangerLevel: method.dangerLevel,
+    stateMutability: method.stateMutability,
+    inputs: method.inputs,
+    outputs: method.outputs,
+  }));
+}
+
+function compactContext(input: RunAgentGeneratedDappWorkflowInput) {
+  return {
+    taskInput: sanitizeTaskInput(input.input),
+    analysis: {
+      contractAddress: input.analysis.contractAddress,
+      contractName: input.analysis.contractName,
+      chain: input.analysis.chain,
+      requestedSkill: input.analysis.requestedSkill,
+      contractType: input.analysis.contractType,
+      skillMatch: input.analysis.skillMatch,
+      recommendedSkills: input.analysis.recommendedSkills,
+      warnings: input.analysis.warnings.slice(0, 20),
+      methods: compactMethods(input.analysis.methods),
+      dangerousMethods: compactMethods(input.analysis.dangerousMethods),
+      omittedMethodCount: Math.max(0, input.analysis.methods.length - maxContextMethods),
+    },
+    capabilities: {
+      kind: input.capabilities.kind,
+      confidence: input.capabilities.confidence,
+      primitives: input.capabilities.primitives.slice(0, 60),
+      unsupported: input.capabilities.unsupported.slice(0, 20),
+    },
+    normalizedSkills: input.normalizedSkills,
+    abi: compactAbi(input.abi),
+    omittedAbiEntryCount: Math.max(0, input.abi.length - maxContextMethods),
+  };
+}
+
+function clampPrompt(prompt: string) {
+  if (prompt.length <= maxPromptLength) {
+    return prompt;
+  }
+  return `${prompt.slice(0, maxPromptLength)}\n\n[Prompt truncated to avoid OS process argument limits. Use the provided compact ABI and safety boundaries only.]`;
 }
 
 function resolveAgentInvocation(input: BuilderTaskInput, prompt: string): { command: string; args: string[] } {
@@ -151,53 +218,47 @@ async function defaultInvokeAgent({ input, prompt }: InvokeAgentInput): Promise<
 }
 
 function buildSharedContext(input: RunAgentGeneratedDappWorkflowInput) {
-  return JSON.stringify({
-    taskInput: sanitizeTaskInput(input.input),
-    analysis: input.analysis,
-    capabilities: input.capabilities,
-    normalizedSkills: input.normalizedSkills,
-    abi: input.abi,
-  }, null, 2);
+  return JSON.stringify(compactContext(input));
 }
 
 function buildProductPrompt(input: RunAgentGeneratedDappWorkflowInput) {
-  return `You are the PM agent for dapp-builder.
+  return clampPrompt(`You are the PM agent for dapp-builder.
 Return strict JSON: {"role":"product-manager","title":"...","markdown":"..."}.
 Design a product flow document from the contract. Do not write UI code.
 The product must not be a scan, ABI viewer, or method dump. Translate contract methods into user goals and safe flows.
 
 Context:
-${buildSharedContext(input)}`;
+${buildSharedContext(input)}`);
 }
 
 function buildDesignPrompt(input: RunAgentGeneratedDappWorkflowInput, productPlan: AgentDocument) {
-  return `You are the designer agent for dapp-builder.
+  return clampPrompt(`You are the designer agent for dapp-builder.
 Return strict JSON: {"role":"designer","title":"...","markdown":"..."}.
 Create a visual and interaction design document from the PM plan. Define layout, hierarchy, states, mobile behavior, and risk surfaces.
 Avoid scan-like method lists. Prefer product workflows, action tabs, asset panels, and advanced method collapse.
 
 Product plan:
-${productPlan.markdown}
+${truncateText(productPlan.markdown)}
 
 Context:
-${buildSharedContext(input)}`;
+${buildSharedContext(input)}`);
 }
 
 function buildFrontendPrompt(input: RunAgentGeneratedDappWorkflowInput, productPlan: AgentDocument, designSpec: AgentDocument) {
-  return `You are the frontend engineer agent for dapp-builder.
+  return clampPrompt(`You are the frontend engineer agent for dapp-builder.
 Return strict JSON: {"summary":"...","files":[{"path":"package.json","content":"..."},{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."}]}.
 Generate a complete Vite React app. The generated page must be product-like and must not render the ABI as a scan or method table.
 Use only contract methods present in the ABI context. Keep dangerous/admin methods away from primary CTAs.
 The app can use React and browser wallet APIs. Do not include API keys or secrets.
 
 Product plan:
-${productPlan.markdown}
+${truncateText(productPlan.markdown)}
 
 Design spec:
-${designSpec.markdown}
+${truncateText(designSpec.markdown)}
 
 Context:
-${buildSharedContext(input)}`;
+${buildSharedContext(input)}`);
 }
 
 async function reportProgress(
