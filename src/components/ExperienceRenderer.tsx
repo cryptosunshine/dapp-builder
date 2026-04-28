@@ -1,4 +1,5 @@
 import type { Experience, MethodRunResult, PageMethod, WalletState } from '../types';
+import type { DiscoveredWallet } from '../lib/wallet';
 import { ExperienceComponentView } from './ExperienceComponents';
 
 interface ExperienceRendererProps {
@@ -9,6 +10,7 @@ interface ExperienceRendererProps {
   onConnectWallet: () => void | Promise<void>;
   onRunMethod: (method: PageMethod, formValues: Record<string, string>) => void | Promise<void>;
   activeResult: MethodRunResult | null;
+  wallets?: DiscoveredWallet[];
 }
 
 export function ExperienceRenderer(props: ExperienceRendererProps) {
@@ -25,6 +27,7 @@ export function ExperienceRenderer(props: ExperienceRendererProps) {
           onConnectWallet={props.onConnectWallet}
           onRunMethod={props.onRunMethod}
           activeResult={props.activeResult}
+          wallets={props.wallets}
         />
       ))}
     </div>

@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { BuilderTask, MethodRunResult, PageMethod, WalletState } from '../types';
 import { getChainMeta } from '../lib/chains';
+import { discoverEip6963Wallets, type DiscoveredWallet } from '../lib/wallet';
 import { ExperienceRenderer } from './ExperienceRenderer';
 import { MethodCard } from './MethodCard';
 import { WalletBar } from './WalletBar';
@@ -17,6 +18,12 @@ interface PreviewPageProps {
 export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, activeResult }: PreviewPageProps) {
   const pageConfig = task.result?.pageConfig;
   const [methodFilter, setMethodFilter] = useState<'all' | 'read' | 'write' | 'danger'>('all');
+  const [wallets, setWallets] = useState<DiscoveredWallet[]>([]);
+
+  useEffect(() => {
+    if (!pageConfig?.skills?.includes('eip-6963-wallet-discovery')) return;
+    void discoverEip6963Wallets().then(setWallets);
+  }, [pageConfig?.skills]);
 
   if (!pageConfig) {
     return <div className="empty-state">No pageConfig is available yet for this task.</div>;
@@ -33,6 +40,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
           onConnectWallet={onConnectWallet}
           onRunMethod={onRunMethod}
           activeResult={activeResult}
+          wallets={wallets}
         />
       </div>
     );
@@ -92,7 +100,7 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
         </div>
       </header>
 
-      <WalletBar walletState={walletState} onConnectWallet={onConnectWallet} chain={pageConfig.chain} />
+      <WalletBar walletState={walletState} onConnectWallet={onConnectWallet} chain={pageConfig.chain} wallets={wallets} />
 
       {pageConfig.warnings.length > 0 && (
         <section className="stack-section">

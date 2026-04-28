@@ -1,4 +1,5 @@
 import type { ExperienceComponent, MethodRunResult, PageMethod, WalletState } from '../types';
+import type { DiscoveredWallet } from '../lib/wallet';
 import { MethodCard } from './MethodCard';
 import { WalletBar } from './WalletBar';
 import { WarningBanner } from './WarningBanner';
@@ -10,9 +11,10 @@ interface Props {
   onConnectWallet: () => void | Promise<void>;
   onRunMethod: (method: PageMethod, formValues: Record<string, string>) => void | Promise<void>;
   activeResult: MethodRunResult | null;
+  wallets?: DiscoveredWallet[];
 }
 
-export function ExperienceComponentView({ component, methodMap, walletState, onConnectWallet, onRunMethod, activeResult }: Props) {
+export function ExperienceComponentView({ component, methodMap, walletState, onConnectWallet, onRunMethod, activeResult, wallets }: Props) {
   const methods = component.methodNames
     .map((methodName) => methodMap.get(methodName))
     .filter((method): method is PageMethod => Boolean(method));
@@ -39,7 +41,7 @@ export function ExperienceComponentView({ component, methodMap, walletState, onC
           <h2>{component.title}</h2>
           {component.description && <p>{component.description}</p>}
         </header>
-        <WalletBar walletState={walletState} onConnectWallet={onConnectWallet} chain="conflux-espace-testnet" />
+        <WalletBar walletState={walletState} onConnectWallet={onConnectWallet} chain="conflux-espace-testnet" wallets={wallets} />
       </section>
     );
   }

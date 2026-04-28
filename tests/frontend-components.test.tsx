@@ -58,6 +58,23 @@ describe('WalletBar', () => {
     fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }));
     expect(onConnectWallet).toHaveBeenCalledTimes(1);
   });
+
+  test('can show discovered EIP-6963 wallets', () => {
+    render(
+      <WalletBar
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        chain={defaultChain}
+        wallets={[
+          { id: 'io.metamask', name: 'MetaMask' },
+          { id: 'com.rabby', name: 'Rabby' },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('MetaMask')).toBeInTheDocument();
+    expect(screen.getByText('Rabby')).toBeInTheDocument();
+  });
 });
 
 // ─── WarningBanner ──────────────────────────────────────────────────────────
