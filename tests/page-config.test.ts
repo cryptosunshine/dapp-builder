@@ -12,6 +12,17 @@ const stakingAbi: AbiEntry[] = [
   { type: 'function', name: 'upgradeTo', stateMutability: 'nonpayable', inputs: [{ name: 'implementation', type: 'address' }], outputs: [] },
 ];
 
+const tokenAbi: AbiEntry[] = [
+  { type: 'function', name: 'name', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'string' }] },
+  { type: 'function', name: 'symbol', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'string' }] },
+  { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
+  { type: 'function', name: 'allowance', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
+  { type: 'function', name: 'transfer', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] },
+  { type: 'function', name: 'approve', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] },
+  { type: 'function', name: 'transferFrom', stateMutability: 'nonpayable', inputs: [{ name: 'from', type: 'address' }, { name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] },
+  { type: 'function', name: 'pause', stateMutability: 'nonpayable', inputs: [], outputs: [] },
+];
+
 describe('buildPageConfig', () => {
   test('builds read/write sections, keeps rpcUrl metadata, and does not expose dangerous admin methods', () => {
     const analysis = analyzeContract({
@@ -35,5 +46,30 @@ describe('buildPageConfig', () => {
       expect.arrayContaining(['Overview', 'Read methods', 'Write methods']),
     );
     expect(pageConfig.warnings.join(' ')).toMatch(/wallet|network|danger/i);
+  });
+
+  test('builds token-first primary actions for ERC20-like contracts instead of a generic method dump', () => {
+    const analysis = analyzeContract({
+      abi: tokenAbi,
+      contractAddress: '0x1234567890123456789012345678901234567890',
+      contractName: 'Mock Token',
+      chain: 'conflux-espace-testnet',
+      requestedSkill: 'token-dashboard',
+    });
+
+    const pageConfig = buildPageConfig(analysis);
+
+    expect(pageConfig.primaryActions).toEqual([
+      'Check wallet balance',
+      'Transfer tokens',
+      'Review approvals',
+      'Revoke approval',
+    ]);
+    expect(pageConfig.sections.map((section) => section.title)).toEqual(
+      expect.arrayContaining(['Token overview', 'Your wallet', 'Send tokens', 'Approvals & spender safety', 'Advanced token actions']),
+    );
+    const advancedActions = pageConfig.sections.find((section) => section.title === 'Advanced token actions');
+    expect(advancedActions?.methodNames).toContain('transferFrom');
+    expect(pageConfig.dangerousMethods.map((method) => method.name)).toContain('pause');
   });
 });

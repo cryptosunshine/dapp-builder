@@ -73,6 +73,7 @@ const task: BuilderTask = {
       contractName: 'Mock Claim',
       skill: 'claim-page',
       warnings: ['Skill matches claim mechanics.'],
+      primaryActions: ['Claim tokens', 'Check wallet balance'],
       dangerousMethods: [
         {
           name: 'setMerkleRoot',
@@ -142,6 +143,25 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/set merkle root/i)).toBeInTheDocument();
   });
 
+  test('promotes the first top action as the primary CTA and keeps the rest as supporting actions', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Top actions')).toBeInTheDocument();
+    expect(screen.getByText('Start here')).toBeInTheDocument();
+    expect(screen.getByText('Best first step for a normal user opening this generated dApp.')).toBeInTheDocument();
+    expect(screen.getByText('Claim tokens').closest('.quick-actions-hero')).toBeInTheDocument();
+    expect(screen.getByText('Claim tokens')).toHaveClass('primary-button');
+    expect(screen.getByText('Check wallet balance')).toHaveClass('ghost-button');
+  });
+
   test('shows empty state when pageConfig is missing', () => {
     const taskNoConfig: BuilderTask = {
       id: 'task-2',
@@ -170,7 +190,7 @@ describe('PreviewPage', () => {
     expect(screen.getByText(/no pageconfig/i)).toBeInTheDocument();
   });
 
-  test('displays chain metadata in hero card meta section', () => {
+  test('surfaces hero context as compact product summary cards', () => {
     render(
       <PreviewPage
         task={task}
@@ -181,8 +201,15 @@ describe('PreviewPage', () => {
       />,
     );
 
-    // The hero card meta should show the chain name with ID
-    expect(screen.getByText(/Chain:.*Conflux eSpace Testnet.*ID: 71/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Product context')).toBeInTheDocument();
+    expect(screen.getByText('Network')).toBeInTheDocument();
+    expect(screen.getByText('Conflux eSpace Testnet')).toBeInTheDocument();
+    expect(screen.getByText('User actions')).toBeInTheDocument();
+    expect(screen.getByText('2 write methods')).toBeInTheDocument();
+    expect(screen.getByText('Risk actions')).toBeInTheDocument();
+    expect(screen.getByText('1 isolated path')).toBeInTheDocument();
+    expect(screen.getByText('Contract')).toBeInTheDocument();
+    expect(screen.getByText(/0x1234…7890/)).toBeInTheDocument();
   });
 
   test('renders fallback danger zone section for dangerousMethods', () => {
@@ -198,6 +225,9 @@ describe('PreviewPage', () => {
 
     expect(screen.getByText('Danger zone')).toBeInTheDocument();
     expect(screen.getByText(/administrative or risky/i)).toBeInTheDocument();
+    expect(screen.getByText('Admin risk check')).toBeInTheDocument();
+    expect(screen.getByText(/only run these methods if you control the contract/i)).toBeInTheDocument();
+    expect(screen.getByText(/pause access, rewrite balances, or change user permissions/i)).toBeInTheDocument();
     expect(screen.getByText(/set merkle root/i)).toBeInTheDocument();
   });
 
@@ -215,19 +245,19 @@ describe('PreviewPage', () => {
     expect(screen.getByRole('button', { name: /claim/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /balance of/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /read methods/i }));
+    fireEvent.click(screen.getByRole('button', { name: /read-only info/i }));
 
     expect(screen.getByRole('button', { name: /balance of/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/set merkle root/i)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /write methods/i }));
+    fireEvent.click(screen.getByRole('button', { name: /user actions/i }));
 
     expect(screen.getByRole('button', { name: /claim/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /balance of/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /run dangerous method/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /danger methods/i }));
+    fireEvent.click(screen.getByRole('button', { name: /risk actions/i }));
 
     expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /balance of/i })).not.toBeInTheDocument();
@@ -245,8 +275,8 @@ describe('PreviewPage', () => {
       />,
     );
 
-    const allButton = screen.getByRole('button', { name: /all methods/i });
-    const dangerButton = screen.getByRole('button', { name: /danger methods/i });
+    const allButton = screen.getByRole('button', { name: /full app flow/i });
+    const dangerButton = screen.getByRole('button', { name: /risk actions/i });
 
     expect(allButton).toHaveAttribute('aria-pressed', 'true');
     expect(dangerButton).toHaveAttribute('aria-pressed', 'false');
@@ -269,10 +299,279 @@ describe('PreviewPage', () => {
     );
 
     // The test data has: 1 danger (setMerkleRoot), 2 write (claim + setMerkleRoot), 1 read (balanceOf) = 3 total
-    expect(screen.getByRole('button', { name: /all methods.*3/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /read methods.*1/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /write methods.*2/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /danger methods.*1/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /full app flow.*3/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /read-only info.*1/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /user actions.*2/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /risk actions.*1/i })).toBeInTheDocument();
+  });
+
+  test('frames method filters as product workflow navigation instead of an ABI toolbar', () => {
+    render(
+      <PreviewPage
+        task={task}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByLabelText('Product workflow filters')).toBeInTheDocument();
+    expect(screen.getByText('Choose what part of the dApp flow to inspect.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /all methods/i })).not.toBeInTheDocument();
+  });
+
+  test('renders token overview as a wallet asset panel when balanceOf exists', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          sections: [
+            {
+              id: 'token-overview',
+              title: 'Token overview',
+              description: 'Track your wallet position before taking action.',
+              variant: 'overview',
+              methodNames: ['balanceOf'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: '0x1111111111111111111111111111111111111111', chainId: 71, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Wallet balance')).toBeInTheDocument();
+    expect(screen.getByText(/ready for 0x1111…1111/i)).toBeInTheDocument();
+    expect(screen.getByText(/wallet ready on conflux espace testnet/i)).toBeInTheDocument();
+    expect(screen.getByText(/token contract 0x1234…7890/i)).toBeInTheDocument();
+    expect(screen.getByText(/use balance of to check holdings before transfers or approvals/i)).toBeInTheDocument();
+    expect(screen.getByText(/rerun balance of after switching wallets or completing a token action/i)).toBeInTheDocument();
+  });
+
+  test('warns when the connected wallet is on the wrong chain in the token asset panel', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          sections: [
+            {
+              id: 'token-overview',
+              title: 'Token overview',
+              description: 'Track your wallet position before taking action.',
+              variant: 'overview',
+              methodNames: ['balanceOf'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: '0x1111111111111111111111111111111111111111', chainId: 1, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText(/wallet is connected to chain id 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/switch wallet to conflux espace testnet before checking balances, sending, or approving/i)).toBeInTheDocument();
+  });
+
+  test('renders an approval safety rail for ERC20 approval sections', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          methods: [
+            ...task.result!.pageConfig!.methods,
+            {
+              name: 'approve',
+              label: 'Approve',
+              type: 'write',
+              dangerLevel: 'warn',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'spender', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+              description: 'Allow another address to spend your tokens.',
+            },
+          ],
+          sections: [
+            {
+              id: 'token-approvals',
+              title: 'Approvals & spender safety',
+              description: 'Review and control token spending approvals.',
+              variant: 'actions',
+              methodNames: ['approve'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Approval safety')).toBeInTheDocument();
+    expect(screen.getByText(/approve only spenders you trust/i)).toBeInTheDocument();
+    expect(screen.getByText(/double-check the spender address before approving/i)).toBeInTheDocument();
+    expect(screen.getByText(/run allowance for the spender before approving/i)).toBeInTheDocument();
+    expect(screen.getByText(/start with the exact allowance this app needs/i)).toBeInTheDocument();
+    expect(screen.getByText(/if the token rejects allowance increases, reset that spender to 0 first/i)).toBeInTheDocument();
+    expect(screen.getByText(/revoke by setting the allowance back to 0/i)).toBeInTheDocument();
+    expect(screen.getByText('Revoke path')).toBeInTheDocument();
+    expect(screen.getByText(/use the same spender and submit approve with amount 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/rerun allowance to confirm it reads 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/after approving, rerun allowance to confirm the new spending limit/i)).toBeInTheDocument();
+  });
+
+  test('renders a transfer helper rail for ERC20 send sections', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          methods: [
+            ...task.result!.pageConfig!.methods,
+            {
+              name: 'transfer',
+              label: 'Send tokens',
+              type: 'write',
+              dangerLevel: 'safe',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'recipient', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+              description: 'Transfer tokens to another wallet.',
+            },
+          ],
+          sections: [
+            {
+              id: 'send-tokens',
+              title: 'Send tokens',
+              description: 'Move tokens to another wallet.',
+              variant: 'actions',
+              methodNames: ['transfer'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: '0x1111111111111111111111111111111111111111', chainId: 71, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Transfer checklist')).toBeInTheDocument();
+    expect(screen.getByText(/confirm the recipient address and token amount/i)).toBeInTheDocument();
+    expect(screen.getByText(/only send to addresses you control or have verified/i)).toBeInTheDocument();
+    expect(screen.getByText(/use the token decimals shown by the app before entering amount/i)).toBeInTheDocument();
+    expect(screen.getByText(/send a small test amount first/i)).toBeInTheDocument();
+    expect(screen.getByText(/token transfers cannot be reversed/i)).toBeInTheDocument();
+    expect(screen.getByText(/after sending, rerun balance of for sender and recipient/i)).toBeInTheDocument();
+    expect(screen.getByText(/make sure the wallet network matches conflux espace testnet/i)).toBeInTheDocument();
+    expect(screen.getByText(/connected wallet will pay gas/i)).toBeInTheDocument();
+  });
+
+  test('keeps ERC20 advanced token actions collapsed until the user opens them', () => {
+    const tokenTask: BuilderTask = {
+      ...task,
+      input: { ...task.input, skill: 'token-dashboard' },
+      result: {
+        ...task.result!,
+        pageConfig: {
+          ...task.result!.pageConfig!,
+          skill: 'token-dashboard',
+          methods: [
+            ...task.result!.pageConfig!.methods,
+            {
+              name: 'transferFrom',
+              label: 'Transfer From',
+              type: 'write',
+              dangerLevel: 'warn',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'from', type: 'address' },
+                { name: 'to', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+              description: 'Move approved tokens from another wallet.',
+            },
+          ],
+          sections: [
+            {
+              id: 'advanced-token-actions',
+              title: 'Advanced token actions',
+              description: 'Less common token actions for power users.',
+              variant: 'actions',
+              methodNames: ['transferFrom'],
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={tokenTask}
+        walletState={{ account: '0x1111111111111111111111111111111111111111', chainId: 71, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText('Advanced token actions')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /transfer from/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Advanced token actions'));
+
+    expect(screen.getByRole('button', { name: /transfer from/i })).toBeInTheDocument();
   });
 
   test('renders product experience components when pageConfig includes experience', () => {
