@@ -101,9 +101,9 @@ const legacySkillMap: Record<string, SkillName> = {
 function normalizeSkillList(value: unknown): SkillName[] {
   const raw = Array.isArray(value) ? value : value ? [value] : ['auto'];
   const normalized = raw
-    .map((skill) => legacySkillMap[String(skill)] ?? String(skill))
+    .map((skill): string => legacySkillMap[String(skill)] ?? String(skill))
     .filter((skill): skill is SkillName => (supportedSkills as readonly string[]).includes(skill));
-  return [...new Set(normalized.length > 0 ? normalized : ['auto'])];
+  return [...new Set<SkillName>(normalized.length > 0 ? normalized : ['auto'])];
 }
 
 const builderTaskInputBaseSchema = z.object({

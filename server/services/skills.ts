@@ -159,22 +159,22 @@ export function getSkillDefinitions() {
   return definitions;
 }
 
-function isBusinessSkill(skill: SkillName): skill is BusinessSkillName {
+function isBusinessSkill(skill: string): skill is BusinessSkillName {
   return (businessSkills as readonly string[]).includes(skill);
 }
 
-function isWalletSkill(skill: SkillName): skill is WalletSkillName {
+function isWalletSkill(skill: string): skill is WalletSkillName {
   return (walletSkills as readonly string[]).includes(skill);
 }
 
-function isExperienceSkill(skill: SkillName): skill is ExperienceSkillName {
+function isExperienceSkill(skill: string): skill is ExperienceSkillName {
   return (experienceSkills as readonly string[]).includes(skill);
 }
 
 export function normalizeSelectedSkills(input: SkillName[]): NormalizedSkills {
   const diagnostics: string[] = [];
-  const valid = input.filter((skill): skill is SkillName => (supportedSkills as readonly string[]).includes(skill));
-  const skills = [...new Set(valid.length > 0 ? valid : ['auto'])];
+  const valid: SkillName[] = input.filter((skill): skill is SkillName => (supportedSkills as readonly string[]).includes(skill));
+  const skills: SkillName[] = [...new Set<SkillName>(valid.length > 0 ? valid : ['auto'])];
 
   if (!skills.some(isBusinessSkill)) {
     skills.unshift('auto');

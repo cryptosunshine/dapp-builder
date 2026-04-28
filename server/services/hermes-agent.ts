@@ -41,7 +41,7 @@ Return ONLY strict JSON matching this guided dApp result shape:
     "chainId": 71,
     "rpcUrl": "https://evmtestnet.confluxrpc.com",
     "contractAddress": "${safeInput.contractAddress}",
-    "skill": "${safeInput.skill}",
+    "skill": "${safeInput.skills[0]}",
     "title": "",
     "description": "",
     "chain": "conflux-espace-testnet",
