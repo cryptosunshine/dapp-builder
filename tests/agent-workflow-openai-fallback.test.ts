@@ -110,4 +110,45 @@ describe('agent workflow OpenAI-compatible fallback', () => {
       }),
     );
   });
+
+  test('retries transient model API fetch failures before failing the task', async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-openai-retry-'));
+    cleanupPaths.push(rootDir);
+    const responses = [
+      { role: 'product-manager', title: 'Token flow', markdown: '# Token flow\n\nFocus balance and transfers.' },
+      { role: 'designer', title: 'Token workspace', markdown: '# Token workspace\n\nUse an asset-focused dashboard.' },
+      {
+        summary: 'Generated React token dashboard.',
+        files: [
+          { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
+          { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+          { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated after retry</main>; }' },
+        ],
+      },
+    ];
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify(responses.shift()) } }],
+        }),
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const artifact = await runAgentGeneratedDappWorkflow({
+      taskId: 'task-openai-retry',
+      rootDir,
+      input,
+      abi: [],
+      analysis,
+      capabilities: { kind: 'token', confidence: 0.9, primitives: [], unsupported: [] },
+      normalizedSkills: { skills: ['token-dashboard'], businessSkills: ['token-dashboard'], walletSkills: [], experienceSkills: [], diagnostics: [] },
+      build: false,
+    });
+
+    expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
 });

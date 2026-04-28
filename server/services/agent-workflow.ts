@@ -197,7 +197,23 @@ function resolveAgentInvocation(input: BuilderTaskInput, prompt: string): AgentI
   }
 }
 
-async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: string): Promise<unknown> {
+function describeAgentApiError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+function isRetriableAgentApiError(error: unknown) {
+  if (error instanceof Error && (error.name === 'AbortError' || error.message === 'fetch failed')) {
+    return true;
+  }
+
+  const status = typeof error === 'object' && error !== null && 'status' in error ? Number(error.status) : 0;
+  return status === 429 || status >= 500;
+}
+
+async function requestOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: string): Promise<unknown> {
   const modelConfig = input.modelConfig;
   const apiKey = modelConfig?.apiKey ?? input.apiKey;
   const model = modelConfig?.model ?? input.model;
@@ -207,8 +223,11 @@ async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: stri
     throw new Error('Agent runtime is unavailable. Install hermes-agent or provide modelConfig.apiKey and model.');
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), appConfig.agentApiTimeoutMs);
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
+    signal: controller.signal,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
@@ -226,11 +245,13 @@ async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: stri
         },
       ],
     }),
-  });
+  }).finally(() => clearTimeout(timeout));
 
   if (!response.ok) {
     const message = await response.text().catch(() => '');
-    throw new Error(`Agent API request failed with ${response.status}${message ? `: ${message}` : ''}`);
+    const error = new Error(`Agent API request failed with ${response.status}${message ? `: ${message}` : ''}`);
+    Object.assign(error, { status: response.status });
+    throw error;
   }
 
   const payload = (await response.json()) as {
@@ -241,6 +262,27 @@ async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: stri
     throw new Error('Agent API did not return message content.');
   }
   return parseJsonIfPresent(content);
+}
+
+async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: string): Promise<unknown> {
+  const baseUrl = input.modelConfig?.baseUrl ?? appConfig.openAiBaseUrl;
+  const maxAttempts = Math.max(1, appConfig.agentApiMaxAttempts);
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await requestOpenAiCompatibleAgent(input, prompt);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= maxAttempts || !isRetriableAgentApiError(error)) {
+        break;
+      }
+    }
+  }
+
+  throw new Error(
+    `Agent API request to ${baseUrl}/chat/completions failed after ${maxAttempts} attempt(s): ${describeAgentApiError(lastError)}`,
+  );
 }
 
 async function defaultInvokeAgent({ input, prompt }: InvokeAgentInput): Promise<unknown> {
