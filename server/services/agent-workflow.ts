@@ -1,6 +1,3 @@
-import { execFile, execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
 import {
   agentDocumentSchema,
   generatedFrontendAppSchema,
@@ -18,7 +15,7 @@ import type { CapabilitySet } from './capabilities.js';
 import { createGeneratedAppArtifact } from './generated-apps.js';
 import type { NormalizedSkills } from './skills.js';
 
-type AgentStage = 'product_planning' | 'experience_design' | 'frontend_generation';
+type AgentStage = 'frontend_generation';
 const maxPromptLength = 16_000;
 const maxDocumentLength = 1_500;
 const maxContextMethods = 30;
@@ -27,11 +24,6 @@ interface InvokeAgentInput {
   stage: AgentStage;
   prompt: string;
   input: BuilderTaskInput;
-}
-
-interface AgentInvocation {
-  command: string;
-  args: string[];
 }
 
 interface RunAgentGeneratedDappWorkflowInput {
@@ -165,47 +157,6 @@ function clampPrompt(prompt: string) {
   return `${prompt.slice(0, maxPromptLength)}\n\n[Prompt truncated to avoid OS process argument limits. Use the provided compact ABI and safety boundaries only.]`;
 }
 
-function resolveAgentInvocation(input: BuilderTaskInput, prompt: string): AgentInvocation | null {
-  const command = appConfig.hermesAgentCommand;
-  const modelConfig = input.modelConfig;
-  const sharedArgs = [
-    `--query=${prompt}`,
-    `--model=${modelConfig?.model ?? input.model}`,
-    `--base_url=${modelConfig?.baseUrl ?? appConfig.openAiBaseUrl}`,
-    '--max_turns=2',
-  ];
-
-  const apiKey = modelConfig?.apiKey ?? input.apiKey;
-  if (apiKey) {
-    sharedArgs.push(`--api_key=${apiKey}`);
-  }
-
-  if (command !== 'hermes-agent') {
-    return { command, args: sharedArgs };
-  }
-
-  try {
-    const wrapperPath = execFileSync('which', [command], { encoding: 'utf8' }).trim();
-    if (wrapperPath.endsWith('/venv/bin/hermes-agent')) {
-      const hermesRoot = resolve(dirname(wrapperPath), '..', '..');
-      return {
-        command: resolve(hermesRoot, 'venv/bin/python3'),
-        args: [resolve(hermesRoot, 'run_agent.py'), ...sharedArgs],
-      };
-    }
-
-    const wrapperSource = readFileSync(wrapperPath, 'utf8');
-    const pythonPath = wrapperSource.match(/^#!(.+)$/m)?.[1]?.trim();
-    if (!pythonPath) return { command, args: sharedArgs };
-    const hermesRoot = resolve(dirname(pythonPath), '..', '..');
-    const runAgentPath = resolve(hermesRoot, 'run_agent.py');
-    if (!existsSync(runAgentPath)) return { command, args: sharedArgs };
-    return { command: pythonPath, args: [runAgentPath, ...sharedArgs] };
-  } catch {
-    return null;
-  }
-}
-
 function describeAgentApiError(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -224,12 +175,13 @@ function isRetriableAgentApiError(error: unknown) {
 
 async function requestOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: string): Promise<unknown> {
   const modelConfig = input.modelConfig;
-  const apiKey = modelConfig?.apiKey ?? input.apiKey;
-  const model = modelConfig?.model ?? input.model;
-  const baseUrl = modelConfig?.baseUrl ?? appConfig.openAiBaseUrl;
+  const configuredAccount = appConfig.modelAccounts.find((account) => account.id === modelConfig?.providerId);
+  const apiKey = modelConfig?.apiKey || input.apiKey || configuredAccount?.apiKey || '';
+  const model = configuredAccount?.model ?? modelConfig?.model ?? input.model;
+  const baseUrl = configuredAccount?.baseUrl ?? modelConfig?.baseUrl ?? appConfig.openAiBaseUrl;
 
   if (!apiKey || !model) {
-    throw new Error('Agent runtime is unavailable. Install hermes-agent or provide modelConfig.apiKey and model.');
+    throw new Error('Model API credentials are unavailable. Select a configured built-in account or provide a custom API key.');
   }
 
   const controller = new AbortController();
@@ -275,7 +227,8 @@ async function requestOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: str
 }
 
 async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: string): Promise<unknown> {
-  const baseUrl = input.modelConfig?.baseUrl ?? appConfig.openAiBaseUrl;
+  const configuredAccount = appConfig.modelAccounts.find((account) => account.id === input.modelConfig?.providerId);
+  const baseUrl = configuredAccount?.baseUrl ?? input.modelConfig?.baseUrl ?? appConfig.openAiBaseUrl;
   const maxAttempts = Math.max(1, appConfig.agentApiMaxAttempts);
   let lastError: unknown;
 
@@ -296,74 +249,37 @@ async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: stri
 }
 
 async function defaultInvokeAgent({ input, prompt }: InvokeAgentInput): Promise<unknown> {
-  if (input.modelConfig?.apiKey || input.apiKey) {
-    return invokeOpenAiCompatibleAgent(input, prompt);
-  }
-
-  const invocation = resolveAgentInvocation(input, prompt);
-  if (!invocation) {
-    return invokeOpenAiCompatibleAgent(input, prompt);
-  }
-
-  return new Promise((resolvePromise, reject) => {
-    execFile(
-      invocation.command,
-      invocation.args,
-      {
-        timeout: appConfig.hermesAgentTimeoutMs,
-        maxBuffer: appConfig.hermesAgentMaxBufferBytes,
-        env: {
-          ...process.env,
-          HERMES_AGENT_DAPP_BUILDER: '1',
-        },
-      },
-      (error, stdout) => {
-        if (error) {
-          if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-            invokeOpenAiCompatibleAgent(input, prompt).then(resolvePromise, reject);
-            return;
-          }
-          reject(error);
-          return;
-        }
-        resolvePromise(parseJsonIfPresent(stdout.toString()));
-      },
-    );
-  });
+  return invokeOpenAiCompatibleAgent(input, prompt);
 }
 
 function buildSharedContext(input: RunAgentGeneratedDappWorkflowInput) {
   return JSON.stringify(compactContext(input));
 }
 
-function buildProductPrompt(input: RunAgentGeneratedDappWorkflowInput) {
-  return clampPrompt(`PM agent. Return only JSON: {"role":"product-manager","title":"...","markdown":"..."}.
-Write a concise MVP product flow, max 8 bullets. No code. No scan/method dump. Focus on 2-4 user goals and safety notes.
+function createWorkflowDocuments(input: RunAgentGeneratedDappWorkflowInput): { productPlan: AgentDocument; designSpec: AgentDocument } {
+  const primaryMethods = input.analysis.methods
+    .slice(0, 8)
+    .map((method) => `- ${method.label} (${method.type})`)
+    .join('\n') || '- Review contract state';
 
-Context:
-${buildSharedContext(input)}`);
+  return {
+    productPlan: agentDocumentSchema.parse({
+      role: 'product-manager',
+      title: 'Direct frontend generation brief',
+      markdown: `# Direct frontend generation brief\n\nGenerate a usable ${input.analysis.contractType} dApp directly from ABI analysis.\n\n${primaryMethods}`,
+    }),
+    designSpec: agentDocumentSchema.parse({
+      role: 'designer',
+      title: 'MVP interface brief',
+      markdown: '# MVP interface brief\n\nUse a focused product workspace with wallet status, primary action, safety notes, and compact advanced methods.',
+    }),
+  };
 }
 
-function buildDesignPrompt(input: RunAgentGeneratedDappWorkflowInput, productPlan: AgentDocument) {
-  return clampPrompt(`Designer agent. Return only JSON: {"role":"designer","title":"...","markdown":"..."}.
-Write a concise UI brief, max 8 bullets. Define layout, primary action area, wallet state, risk state, and mobile behavior. No scan/method table.
-
-Product plan:
-${truncateText(productPlan.markdown)}
-
-Context:
-${buildSharedContext(input)}`);
-}
-
-function buildFrontendPrompt(input: RunAgentGeneratedDappWorkflowInput, productPlan: AgentDocument, designSpec: AgentDocument) {
+function buildFrontendPrompt(input: RunAgentGeneratedDappWorkflowInput) {
   return clampPrompt(`Frontend agent. Return only JSON: {"summary":"...","files":[{"path":"package.json","content":"..."},{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."}]}.
-Generate a minimal complete Vite React app. Keep code compact. Product-like, not ABI scan. Use only methods in context. No secrets.
-
-Product plan:
-${truncateText(productPlan.markdown)}
-
-Design spec:
-${truncateText(designSpec.markdown)}
+Generate a minimal complete Vite React app directly from the context. Keep code compact. Product-like, not ABI scan. Use only methods in context. No secrets.
+The app should include wallet connection UI, primary user flow, safety notes, and compact advanced method access.
 
 Context:
 ${buildSharedContext(input)}`);
@@ -428,7 +344,7 @@ function App() {
         <div>
           <p className="eyebrow">{data.contractType} dApp</p>
           <h1>{data.title}</h1>
-          <p className="summary">Agent planning completed. This MVP interface was generated locally after the frontend agent timed out.</p>
+          <p className="summary">The frontend agent could not finish in time, so this task produced a compact local preview that still follows the detected contract capabilities.</p>
         </div>
         <div className="address">
           <span>Contract</span>
@@ -508,27 +424,14 @@ async function reportProgress(
 
 export async function runAgentGeneratedDappWorkflow(input: RunAgentGeneratedDappWorkflowInput): Promise<GeneratedAppArtifact> {
   const invokeAgent = input.invokeAgent ?? defaultInvokeAgent;
-
-  await reportProgress(input.onProgress, 'product_planning', 'PM agent is designing the product flow.');
-  const productPlan = coerceAgentDocument(await invokeAgent({
-    stage: 'product_planning',
-    prompt: buildProductPrompt(input),
-    input: input.input,
-  }), 'product-manager', 'Product flow');
-
-  await reportProgress(input.onProgress, 'experience_design', 'Designer agent is defining the page structure and interactions.');
-  const designSpec = coerceAgentDocument(await invokeAgent({
-    stage: 'experience_design',
-    prompt: buildDesignPrompt(input, productPlan),
-    input: input.input,
-  }), 'designer', 'Generated dApp design');
+  const { productPlan, designSpec } = createWorkflowDocuments(input);
 
   await reportProgress(input.onProgress, 'frontend_generation', 'Frontend agent is generating the React dApp source.');
   let frontendApp: GeneratedFrontendApp;
   try {
     frontendApp = coerceGeneratedFrontendApp(await invokeAgent({
       stage: 'frontend_generation',
-      prompt: buildFrontendPrompt(input, productPlan, designSpec),
+      prompt: buildFrontendPrompt(input),
       input: input.input,
     }));
   } catch (error) {

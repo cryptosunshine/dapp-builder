@@ -49,7 +49,7 @@ describe('TaskStatusCard', () => {
     expect(screen.getByText('Fetching contract ABI from ConfluxScan.')).toBeInTheDocument();
   });
 
-  test('renders a generation stepper with the current agent stage highlighted', () => {
+  test('renders a compact generation stepper with the current generation stage highlighted', () => {
     render(
       <TaskStatusCard
         task={{
@@ -61,10 +61,10 @@ describe('TaskStatusCard', () => {
     );
 
     expect(screen.getByLabelText(/dapp generation progress/i)).toBeInTheDocument();
-    expect(screen.getByText('Product plan')).toBeInTheDocument();
-    expect(screen.getByText('Design')).toBeInTheDocument();
+    expect(screen.queryByText('Product plan')).not.toBeInTheDocument();
+    expect(screen.queryByText('Design')).not.toBeInTheDocument();
     expect(screen.getByText('React app')).toHaveAttribute('aria-current', 'step');
-    expect(screen.getByText('Build')).toBeInTheDocument();
+    expect(screen.getByText('Build preview')).toBeInTheDocument();
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 

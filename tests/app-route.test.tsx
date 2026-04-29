@@ -101,8 +101,8 @@ describe('App route aliases', () => {
     mockedGetTask.mockResolvedValueOnce({
       id: 'task-processing',
       status: 'processing',
-      progress: 'product_planning',
-      summary: 'PM agent is designing the product flow.',
+      progress: 'frontend_generation',
+      summary: 'Frontend agent is generating the React dApp source.',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       input: completedTask.input,

@@ -12,11 +12,12 @@ const initialState: BuilderTaskInput = {
   chain: 'conflux-espace-testnet',
   skills: ['auto', 'injected-wallet', 'guided-flow', 'risk-explainer'],
   skill: 'auto',
-  model: 'gpt-5.4',
+  model: 'deepseek-ai/deepseek-v4-pro',
   apiKey: '',
   modelConfig: {
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-5.4',
+    providerId: 'nvidia-deepseek-v4-pro',
+    baseUrl: 'https://integrate.api.nvidia.com/v1',
+    model: 'deepseek-ai/deepseek-v4-pro',
     apiKey: '',
   },
 };
@@ -54,6 +55,21 @@ const skillGroups = [
   },
 ] as const;
 
+const modelAccounts = [
+  {
+    id: 'nvidia-deepseek-v4-pro',
+    label: 'NVIDIA DeepSeek V4 Pro',
+    baseUrl: 'https://integrate.api.nvidia.com/v1',
+    model: 'deepseek-ai/deepseek-v4-pro',
+  },
+  {
+    id: 'openai-gpt-5.4',
+    label: 'OpenAI GPT-5.4',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-5.4',
+  },
+] as const;
+
 function addressHint(address: string): { text: string; className: string } | null {
   if (address.length === 0) return null;
   if (validAddressRe.test(address)) {
@@ -88,6 +104,7 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
 
   const validation = useMemo(() => addressHint(formState.contractAddress), [formState.contractAddress]);
   const chainMeta = useMemo(() => getChainMeta(formState.chain), [formState.chain]);
+  const isCustomModel = formState.modelConfig?.providerId === 'custom';
 
   return (
     <form
@@ -159,60 +176,99 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
           ))}
         </fieldset>
 
-        <label className="field">
-          <span>Base URL</span>
-          <input
-            value={formState.modelConfig?.baseUrl ?? ''}
-            onChange={(event) => setFormState((current) => ({
-              ...current,
-              modelConfig: {
-                baseUrl: event.target.value,
-                model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
-                apiKey: current.modelConfig?.apiKey ?? '',
-              },
-            }))}
-            placeholder="https://api.openai.com/v1"
-          />
-        </label>
-
-        <label className="field">
-          <span>Model</span>
-          <input
-            value={formState.modelConfig?.model ?? ''}
-            onChange={(event) => setFormState((current) => ({
-              ...current,
-              model: event.target.value,
-              modelConfig: {
-                baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
-                model: event.target.value,
-                apiKey: current.modelConfig?.apiKey ?? '',
-              },
-            }))}
-            placeholder="gpt-5.4"
-          />
-        </label>
-
-        <div className="field field-full">
-          <label htmlFor="api-key-input">API key</label>
-          <input
-            id="api-key-input"
-            aria-describedby="api-key-hint"
-            value={formState.modelConfig?.apiKey ?? ''}
-            onChange={(event) => setFormState((current) => ({
-              ...current,
-              apiKey: event.target.value,
-              modelConfig: {
-                baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
-                model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
-                apiKey: event.target.value,
-              },
-            }))}
-            placeholder="Optional for now, but wired for future prompt enhancement"
-          />
-          <span id="api-key-hint" className="field-hint">
-            Blank API key uses deterministic ABI-only generation. Model is only used to polish labels when an API key is provided.
+        <label className="field field-full">
+          <span>Model account</span>
+          <select
+            value={formState.modelConfig?.providerId ?? 'custom'}
+            onChange={(event) => {
+              const providerId = event.target.value;
+              const account = modelAccounts.find((entry) => entry.id === providerId);
+              setFormState((current) => ({
+                ...current,
+                model: account?.model ?? current.modelConfig?.model ?? 'gpt-5.4',
+                apiKey: '',
+                modelConfig: account
+                  ? { providerId: account.id, baseUrl: account.baseUrl, model: account.model, apiKey: '' }
+                  : {
+                      providerId: 'custom',
+                      baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
+                      model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
+                      apiKey: current.modelConfig?.apiKey ?? '',
+                    },
+              }));
+            }}
+          >
+            {modelAccounts.map((account) => (
+              <option key={account.id} value={account.id}>{account.label}</option>
+            ))}
+            <option value="custom">Custom API</option>
+          </select>
+          <span className="field-hint">
+            Built-in accounts use server-side keys. Choose custom to provide your own Base URL and API key.
           </span>
-        </div>
+        </label>
+
+        {isCustomModel && (
+          <>
+            <label className="field">
+              <span>Base URL</span>
+              <input
+                value={formState.modelConfig?.baseUrl ?? ''}
+                onChange={(event) => setFormState((current) => ({
+                  ...current,
+                  modelConfig: {
+                    providerId: 'custom',
+                    baseUrl: event.target.value,
+                    model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
+                    apiKey: current.modelConfig?.apiKey ?? '',
+                  },
+                }))}
+                placeholder="https://api.openai.com/v1"
+              />
+            </label>
+
+            <label className="field">
+              <span>Model</span>
+              <input
+                value={formState.modelConfig?.model ?? ''}
+                onChange={(event) => setFormState((current) => ({
+                  ...current,
+                  model: event.target.value,
+                  modelConfig: {
+                    providerId: 'custom',
+                    baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
+                    model: event.target.value,
+                    apiKey: current.modelConfig?.apiKey ?? '',
+                  },
+                }))}
+                placeholder="gpt-5.4"
+              />
+            </label>
+
+            <div className="field field-full">
+              <label htmlFor="api-key-input">API key</label>
+              <input
+                id="api-key-input"
+                aria-describedby="api-key-hint"
+                value={formState.modelConfig?.apiKey ?? ''}
+                onChange={(event) => setFormState((current) => ({
+                  ...current,
+                  apiKey: event.target.value,
+                  modelConfig: {
+                    providerId: 'custom',
+                    baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
+                    model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
+                    apiKey: event.target.value,
+                  },
+                }))}
+                placeholder="sk-..."
+              />
+              <span id="api-key-hint" className="field-hint">
+                Custom keys are used only for this generation task and are not persisted.
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="button-row">

@@ -2,12 +2,16 @@ import type { BuilderTask } from '../types';
 
 const generationSteps = [
   { progress: 'fetching_abi', label: 'ABI' },
-  { progress: 'product_planning', label: 'Product plan' },
-  { progress: 'experience_design', label: 'Design' },
   { progress: 'frontend_generation', label: 'React app' },
-  { progress: 'validating_generated_app', label: 'Build' },
+  { progress: 'validating_generated_app', label: 'Build preview' },
   { progress: 'completed', label: 'Done' },
 ] as const;
+
+function stepIndexForProgress(progress: BuilderTask['progress'] | undefined) {
+  if (progress === 'fetching_abi' || progress === 'analyzing_contract') return 0;
+  const stepIndex = generationSteps.findIndex((step) => step.progress === progress);
+  return Math.max(0, stepIndex);
+}
 
 export function TaskStatusCard({ task, surface = 'default' }: { task: BuilderTask | null; surface?: 'default' | 'builder-home' }) {
   const surfaceClassName = surface === 'builder-home' ? ' status-card--builder-home' : ' status-card--task-preview';
@@ -22,9 +26,7 @@ export function TaskStatusCard({ task, surface = 'default' }: { task: BuilderTas
   }
 
   const previewHref = task.id && task.status !== 'failed' ? `/app/${task.id}` : null;
-  const currentStepIndex = task.progress
-    ? Math.max(0, generationSteps.findIndex((step) => step.progress === task.progress))
-    : 0;
+  const currentStepIndex = stepIndexForProgress(task.progress);
 
   return (
     <div className={`status-card status-${task.status}${surfaceClassName}`}>
@@ -34,7 +36,7 @@ export function TaskStatusCard({ task, surface = 'default' }: { task: BuilderTas
       {task.summary && <p>{task.summary}</p>}
       <ol className="generation-stepper" aria-label="dApp generation progress">
         {generationSteps.map((step, index) => {
-          const isCurrent = task.progress === step.progress;
+          const isCurrent = index === currentStepIndex && task.status !== 'completed';
           const isDone = task.status === 'completed' || index < currentStepIndex;
           return (
             <li

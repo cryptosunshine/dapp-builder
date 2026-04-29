@@ -27,10 +27,11 @@ describe('BuilderForm', () => {
     // Fill in some values different from defaults
     await user.clear(screen.getByLabelText(/contract address/i));
     await user.type(screen.getByLabelText(/contract address/i), '0x1234567890123456789012345678901234567890');
+    await user.selectOptions(screen.getByLabelText(/model account/i), 'custom');
     await user.clear(screen.getByLabelText(/^model$/i));
     await user.type(screen.getByLabelText(/^model$/i), 'claude-4');
-    await user.clear(screen.getByLabelText(/api key/i));
-    await user.type(screen.getByLabelText(/api key/i), 'sk-test-key');
+    await user.clear(screen.getByRole('textbox', { name: /^api key$/i }));
+    await user.type(screen.getByRole('textbox', { name: /^api key$/i }), 'sk-test-key');
 
     // Click clear form
     await user.click(screen.getByRole('button', { name: /clear form/i }));
@@ -39,11 +40,10 @@ describe('BuilderForm', () => {
     const addressInput = screen.getByLabelText(/contract address/i) as HTMLInputElement;
     expect(addressInput).toHaveValue('');
 
-    const modelInput = screen.getByLabelText(/^model$/i) as HTMLInputElement;
-    expect(modelInput).toHaveValue('gpt-5.4');
-
-    const apiKeyInput = screen.getByLabelText(/api key/i) as HTMLInputElement;
-    expect(apiKeyInput).toHaveValue('');
+    const modelAccountInput = screen.getByLabelText(/model account/i) as HTMLSelectElement;
+    expect(modelAccountInput).toHaveValue('nvidia-deepseek-v4-pro');
+    expect(screen.queryByLabelText(/^model$/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /^api key$/i })).not.toBeInTheDocument();
   });
 
   test('shows categorized skill options', () => {
@@ -56,15 +56,15 @@ describe('BuilderForm', () => {
     expect(screen.getByLabelText(/Transaction timeline/i)).toBeInTheDocument();
   });
 
-  test('shows deterministic mode helper copy when API key is blank without expanding the input name', () => {
+  test('shows built-in model account helper copy by default', () => {
     render(<BuilderForm onSubmit={vi.fn()} isSubmitting={false} />);
 
-    expect(screen.getByText(/Blank API key uses deterministic ABI-only generation/i)).toBeInTheDocument();
-    expect(screen.getByText(/Model is only used to polish labels when an API key is provided/i)).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /^api key$/i })).toBeInTheDocument();
+    expect(screen.getByText(/Built-in accounts use server-side keys/i)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /model account/i })).toHaveValue('nvidia-deepseek-v4-pro');
+    expect(screen.queryByRole('textbox', { name: /^api key$/i })).not.toBeInTheDocument();
   });
 
-  test('allows submitting without an API key for deterministic-only runs', async () => {
+  test('submits the selected built-in model account without an API key', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
 
@@ -85,11 +85,12 @@ describe('BuilderForm', () => {
       chain: 'conflux-espace-testnet',
       skill: 'auto',
       skills: ['auto', 'injected-wallet', 'guided-flow', 'risk-explainer'],
-      model: 'gpt-5.4',
+      model: 'deepseek-ai/deepseek-v4-pro',
       apiKey: '',
       modelConfig: {
-        baseUrl: 'https://api.openai.com/v1',
-        model: 'gpt-5.4',
+        providerId: 'nvidia-deepseek-v4-pro',
+        baseUrl: 'https://integrate.api.nvidia.com/v1',
+        model: 'deepseek-ai/deepseek-v4-pro',
         apiKey: '',
       },
     });
@@ -105,11 +106,12 @@ describe('BuilderForm', () => {
     await user.click(screen.getByLabelText(/Auto/i));
     await user.click(screen.getByLabelText(/Token dashboard/i));
     await user.click(screen.getByLabelText(/EIP-6963 wallet discovery/i));
-    await user.clear(screen.getByLabelText(/Base URL/i));
-    await user.type(screen.getByLabelText(/Base URL/i), 'https://api.openai.com/v1');
+    await user.selectOptions(screen.getByLabelText(/model account/i), 'custom');
+    await user.clear(screen.getByRole('textbox', { name: /^base url$/i }));
+    await user.type(screen.getByRole('textbox', { name: /^base url$/i }), 'https://api.openai.com/v1');
     await user.clear(screen.getByLabelText(/^Model$/i));
     await user.type(screen.getByLabelText(/^Model$/i), 'gpt-5.4');
-    await user.type(screen.getByLabelText(/API key/i), 'secret');
+    await user.type(screen.getByRole('textbox', { name: /^api key$/i }), 'secret');
     await user.click(screen.getByRole('button', { name: /generate dapp preview/i }));
 
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
@@ -117,6 +119,7 @@ describe('BuilderForm', () => {
       chain: 'conflux-espace-testnet',
       skills: expect.arrayContaining(['token-dashboard', 'eip-6963-wallet-discovery', 'guided-flow']),
       modelConfig: {
+        providerId: 'custom',
         baseUrl: 'https://api.openai.com/v1',
         model: 'gpt-5.4',
         apiKey: 'secret',

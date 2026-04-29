@@ -1,4 +1,3 @@
-import { execFile, execFileSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -6,13 +5,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { runAgentGeneratedDappWorkflow } from '../server/services/agent-workflow';
 import type { AnalyzeContractResult, BuilderTaskInput } from '../shared/schema';
 
-vi.mock('node:child_process', () => ({
-  execFile: vi.fn(),
-  execFileSync: vi.fn(),
-}));
-
-const mockedExecFile = vi.mocked(execFile);
-const mockedExecFileSync = vi.mocked(execFileSync);
 const cleanupPaths: string[] = [];
 
 const input: BuilderTaskInput = {
@@ -43,19 +35,7 @@ const analysis: AnalyzeContractResult = {
 };
 
 beforeEach(() => {
-  mockedExecFile.mockReset();
-  mockedExecFileSync.mockReset();
-  mockedExecFileSync.mockImplementation(() => {
-    const error = new Error('not found') as NodeJS.ErrnoException;
-    error.code = 'ENOENT';
-    throw error;
-  });
-  mockedExecFile.mockImplementation((file, _args, _options, callback) => {
-    const error = new Error(`spawn ${file} ENOENT`) as NodeJS.ErrnoException;
-    error.code = 'ENOENT';
-    callback?.(error, '', '');
-    return {} as ReturnType<typeof execFile>;
-  });
+  vi.unstubAllGlobals();
 });
 
 afterEach(async () => {
@@ -64,26 +44,24 @@ afterEach(async () => {
 });
 
 describe('agent workflow OpenAI-compatible fallback', () => {
-  test('uses the submitted model API before local hermes-agent when model credentials are provided', async () => {
-    mockedExecFileSync.mockReturnValue('/root/.hermes/hermes-agent/venv/bin/hermes-agent\n' as never);
+  test('uses the submitted model API directly when model credentials are provided', async () => {
     const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-openai-preferred-'));
     cleanupPaths.push(rootDir);
-    const responses = [
-      { role: 'product-manager', title: 'Token flow', markdown: '# Token flow\n\nFocus balance and transfers.' },
-      { role: 'designer', title: 'Token workspace', markdown: '# Token workspace\n\nUse an asset-focused dashboard.' },
-      {
-        summary: 'Generated React token dashboard.',
-        files: [
-          { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
-          { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-          { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated without hermes logs</main>; }' },
-        ],
-      },
-    ];
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: JSON.stringify(responses.shift()) } }],
+        choices: [{
+          message: {
+            content: JSON.stringify({
+              summary: 'Generated React token dashboard.',
+              files: [
+                { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
+                { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+                { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated with direct model API</main>; }' },
+              ],
+            }),
+          },
+        }],
       }),
     }));
     vi.stubGlobal('fetch', fetchMock);
@@ -100,29 +78,27 @@ describe('agent workflow OpenAI-compatible fallback', () => {
     });
 
     expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
-    expect(mockedExecFile).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  test('uses the submitted model API when hermes-agent is not installed', async () => {
+  test('sends the frontend generation request to the submitted model API', async () => {
     const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-openai-'));
     cleanupPaths.push(rootDir);
-    const responses = [
-      { role: 'product-manager', title: 'Token flow', markdown: '# Token flow\n\nFocus balance and transfers.' },
-      { role: 'designer', title: 'Token workspace', markdown: '# Token workspace\n\nUse an asset-focused dashboard.' },
-      {
-        summary: 'Generated React token dashboard.',
-        files: [
-          { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
-          { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-          { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated with API fallback</main>; }' },
-        ],
-      },
-    ];
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: JSON.stringify(responses.shift()) } }],
+        choices: [{
+          message: {
+            content: JSON.stringify({
+              summary: 'Generated React token dashboard.',
+              files: [
+                { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
+                { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+                { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated with API fallback</main>; }' },
+              ],
+            }),
+          },
+        }],
       }),
     }));
     vi.stubGlobal('fetch', fetchMock);
@@ -139,9 +115,7 @@ describe('agent workflow OpenAI-compatible fallback', () => {
     });
 
     expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
-    expect(mockedExecFileSync).not.toHaveBeenCalled();
-    expect(mockedExecFile).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.openai.com/v1/chat/completions',
       expect.objectContaining({
@@ -154,25 +128,24 @@ describe('agent workflow OpenAI-compatible fallback', () => {
   test('retries transient model API fetch failures before failing the task', async () => {
     const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-openai-retry-'));
     cleanupPaths.push(rootDir);
-    const responses = [
-      { role: 'product-manager', title: 'Token flow', markdown: '# Token flow\n\nFocus balance and transfers.' },
-      { role: 'designer', title: 'Token workspace', markdown: '# Token workspace\n\nUse an asset-focused dashboard.' },
-      {
-        summary: 'Generated React token dashboard.',
-        files: [
-          { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
-          { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-          { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated after retry</main>; }' },
-        ],
-      },
-    ];
     const fetchMock = vi
       .fn()
       .mockRejectedValueOnce(new TypeError('fetch failed'))
       .mockImplementation(async () => ({
         ok: true,
         json: async () => ({
-          choices: [{ message: { content: JSON.stringify(responses.shift()) } }],
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                summary: 'Generated React token dashboard.',
+                files: [
+                  { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
+                  { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+                  { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated after retry</main>; }' },
+                ],
+              }),
+            },
+          }],
         }),
       }));
     vi.stubGlobal('fetch', fetchMock);
@@ -189,6 +162,6 @@ describe('agent workflow OpenAI-compatible fallback', () => {
     });
 
     expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

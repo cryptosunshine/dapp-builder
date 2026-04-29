@@ -79,15 +79,15 @@ describe('createTaskStore', () => {
 
     await store.updateTask(task.id!, {
       status: 'processing',
-      progress: 'product_planning',
-      summary: 'PM agent is designing the product flow.',
+      progress: 'frontend_generation',
+      summary: 'Frontend agent is generating the React dApp source.',
     });
 
     const persisted = await store.getTask(task.id!);
     expect(persisted).toMatchObject({
       status: 'processing',
-      progress: 'product_planning',
-      summary: 'PM agent is designing the product flow.',
+      progress: 'frontend_generation',
+      summary: 'Frontend agent is generating the React dApp source.',
     });
   });
 });

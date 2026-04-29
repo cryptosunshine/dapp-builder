@@ -196,7 +196,7 @@ describe('tasks API', () => {
     const dataDir = await mkdtemp(join(tmpdir(), 'dapp-builder-api-'));
     cleanupPaths.push(dataDir);
     mockedRunBuilderAgent.mockImplementation(async (_input, options) => {
-      await options?.onProgress?.('product_planning', 'PM agent is designing the product flow.');
+      await options?.onProgress?.('frontend_generation', 'Frontend agent is generating the React dApp source.');
       throw new Error('stop after progress');
     });
 
@@ -217,8 +217,8 @@ describe('tasks API', () => {
       expect(detail).toMatchObject({
         id: createdTask.id,
         status: 'failed',
-        progress: 'product_planning',
-        summary: 'PM agent is designing the product flow.',
+        progress: 'frontend_generation',
+        summary: 'Frontend agent is generating the React dApp source.',
         error: 'stop after progress',
       });
     } finally {

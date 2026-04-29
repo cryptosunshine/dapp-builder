@@ -34,7 +34,7 @@ const analysis: AnalyzeContractResult = {
 };
 
 describe('agent generated dApp workflow', () => {
-  test('runs PM, designer, and frontend agent stages in order and stores the generated React app', async () => {
+  test('runs a single frontend agent stage and stores the generated React app', async () => {
     const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-'));
     cleanupPaths.push(rootDir);
     const seenStages: string[] = [];
@@ -52,12 +52,6 @@ describe('agent generated dApp workflow', () => {
       build: false,
       invokeAgent: async ({ stage }) => {
         seenStages.push(stage);
-        if (stage === 'product_planning') {
-          return { role: 'product-manager', title: 'Token flow', markdown: '# Token flow\n\nUse balance, transfer, and approvals.' };
-        }
-        if (stage === 'experience_design') {
-          return { role: 'designer', title: 'Token dashboard design', markdown: '# Token dashboard design\n\nAave-like asset workspace.' };
-        }
         return {
           summary: 'Generated React token dashboard.',
           files: [
@@ -69,17 +63,17 @@ describe('agent generated dApp workflow', () => {
       },
     });
 
-    expect(seenStages).toEqual(['product_planning', 'experience_design', 'frontend_generation']);
-    expect(progress).toHaveBeenCalledWith('product_planning', expect.any(String));
-    expect(progress).toHaveBeenCalledWith('experience_design', expect.any(String));
+    expect(seenStages).toEqual(['frontend_generation']);
+    expect(progress).not.toHaveBeenCalledWith('product_planning', expect.any(String));
+    expect(progress).not.toHaveBeenCalledWith('experience_design', expect.any(String));
     expect(progress).toHaveBeenCalledWith('frontend_generation', expect.any(String));
     expect(progress).toHaveBeenCalledWith('validating_generated_app', expect.any(String));
     expect(artifact.previewUrl).toBe('/generated-dapps/task-agent/dist/index.html');
-    expect(artifact.productPlan.markdown).toContain('balance');
-    expect(artifact.designSpec.markdown).toContain('Aave-like');
+    expect(artifact.productPlan.markdown).toContain('Direct frontend generation');
+    expect(artifact.designSpec.markdown).toContain('MVP interface');
   });
 
-  test('accepts non-json PM and designer markdown so agent formatting drift does not fail the task', async () => {
+  test('accepts fenced JSON frontend output', async () => {
     const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-'));
     cleanupPaths.push(rootDir);
 
@@ -92,19 +86,11 @@ describe('agent generated dApp workflow', () => {
       capabilities: { kind: 'token', confidence: 0.9, primitives: [], unsupported: [] },
       normalizedSkills: { skills: ['token-dashboard'], businessSkills: ['token-dashboard'], walletSkills: [], experienceSkills: [], diagnostics: [] },
       build: false,
-      invokeAgent: async ({ stage }) => {
-        if (stage === 'product_planning') {
-          return '# Token PM flow\n\nThis token page should focus on balance, transfer, and approval tasks.';
-        }
-        if (stage === 'experience_design') {
-          return 'Design direction: a focused asset workspace with action tabs and a clear risk rail.';
-        }
+      invokeAgent: async () => {
         return '```json\n{"summary":"Generated React token dashboard.","files":[{"path":"package.json","content":"{\\"type\\":\\"module\\",\\"scripts\\":{\\"build\\":\\"vite build\\"}}"},{"path":"index.html","content":"<div id=\\"root\\"></div><script type=\\"module\\" src=\\"/src/App.jsx\\"></script>"},{"path":"src/App.jsx","content":"export default function App(){ return <main>Agent token dashboard</main>; }"}]}\n```';
       },
     });
 
-    expect(artifact.productPlan.markdown).toContain('Token PM flow');
-    expect(artifact.designSpec.markdown).toContain('asset workspace');
     expect(artifact.frontendSummary).toBe('Generated React token dashboard.');
   });
 
@@ -157,12 +143,7 @@ describe('agent generated dApp workflow', () => {
       build: false,
       invokeAgent: async ({ stage, prompt }) => {
         promptLengths.push(prompt.length);
-        if (stage === 'product_planning') {
-          return '# Token PM flow\n\n'.concat('Use product flows, not scans. '.repeat(3000));
-        }
-        if (stage === 'experience_design') {
-          return '# Token design\n\n'.concat('Use a calm asset workspace. '.repeat(3000));
-        }
+        expect(stage).toBe('frontend_generation');
         return {
           summary: 'Generated React token dashboard.',
           files: [
@@ -174,6 +155,7 @@ describe('agent generated dApp workflow', () => {
       },
     });
 
+    expect(promptLengths).toHaveLength(1);
     expect(Math.max(...promptLengths)).toBeLessThan(18_000);
   });
 
@@ -218,22 +200,16 @@ describe('agent generated dApp workflow', () => {
       build: true,
       invokeAgent: async ({ stage }) => {
         seenStages.push(stage);
-        if (stage === 'product_planning') {
-          return { role: 'product-manager', title: 'Mint flow', markdown: '# Mint flow\n\nGuide users to mint and review ownership.' };
-        }
-        if (stage === 'experience_design') {
-          return { role: 'designer', title: 'Collection workspace', markdown: '# Collection workspace\n\nUse a focused mint panel and safety rail.' };
-        }
         const error = new Error('This operation was aborted');
         error.name = 'AbortError';
         throw error;
       },
     });
 
-    expect(seenStages).toEqual(['product_planning', 'experience_design', 'frontend_generation']);
+    expect(seenStages).toEqual(['frontend_generation']);
     expect(artifact.frontendSummary).toContain('fallback');
     expect(artifact.buildStatus).toBe('success');
-    expect(artifact.productPlan.markdown).toContain('mint');
-    expect(artifact.designSpec.markdown).toContain('safety rail');
+    expect(artifact.productPlan.markdown).toContain('Direct frontend generation');
+    expect(artifact.designSpec.markdown).toContain('MVP interface');
   });
 });

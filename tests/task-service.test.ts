@@ -106,7 +106,7 @@ describe('task execution failure handling', () => {
     cleanupPaths.push(dataDir);
     mockedRunBuilderAgent.mockRejectedValue(
       new Error(
-        'Command failed: /root/.hermes/hermes-agent/run_agent.py --query=Frontend agent very long prompt --api_key=secret-api-key',
+        'Command failed: /usr/local/bin/model-runner --query=Frontend agent very long prompt --api_key=secret-api-key',
       ),
     );
 

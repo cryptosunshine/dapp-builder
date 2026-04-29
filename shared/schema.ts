@@ -71,6 +71,10 @@ export const chainIdToKey: Record<ChainId, ChainKey> = {
   71: 'conflux-espace-testnet',
 };
 
+export const defaultModelProviderId = 'nvidia-deepseek-v4-pro';
+export const defaultModelBaseUrl = 'https://integrate.api.nvidia.com/v1';
+export const defaultModelName = 'deepseek-ai/deepseek-v4-pro';
+
 export const chainMetadataById: Record<ChainId, { chainId: ChainId; chain: ChainKey; chainName: string; rpcUrl: string }> = {
   71: {
     chainId: 71,
@@ -94,7 +98,8 @@ export const abiEntrySchema = z.object({
 });
 
 export const modelConfigSchema = z.object({
-  baseUrl: z.string().url().default('https://api.openai.com/v1'),
+  providerId: z.string().trim().min(1).optional(),
+  baseUrl: z.string().url().default(defaultModelBaseUrl),
   model: z.string().trim().min(1),
   apiKey: z.string().default(''),
 });
@@ -129,8 +134,9 @@ const builderTaskInputBaseSchema = z.object({
 const transformedBuilderTaskInputSchema = builderTaskInputBaseSchema.transform((input) => {
   const skills = normalizeSkillList(input.skills ?? input.skill);
   const modelConfig = input.modelConfig ?? {
-    baseUrl: 'https://api.openai.com/v1',
-    model: input.model ?? 'gpt-5.4',
+    providerId: defaultModelProviderId,
+    baseUrl: defaultModelBaseUrl,
+    model: input.model ?? defaultModelName,
     apiKey: input.apiKey ?? '',
   };
 
@@ -160,8 +166,9 @@ export const builderTaskRequestSchema = z.object({
 }).transform((input) => {
   const skills = normalizeSkillList(input.skills ?? input.skill);
   const modelConfig = input.modelConfig ?? {
-    baseUrl: 'https://api.openai.com/v1',
-    model: input.model ?? 'gpt-5.4',
+    providerId: defaultModelProviderId,
+    baseUrl: defaultModelBaseUrl,
+    model: input.model ?? defaultModelName,
     apiKey: input.apiKey ?? '',
   };
 
@@ -435,7 +442,7 @@ export function sanitizeTaskInput(input: BuilderTaskInput | BuilderTaskRequest):
     skill: request.skill,
     model: request.model,
     modelConfig: request.modelConfig
-      ? { baseUrl: request.modelConfig.baseUrl, model: request.modelConfig.model }
+      ? { providerId: request.modelConfig.providerId, baseUrl: request.modelConfig.baseUrl, model: request.modelConfig.model }
       : undefined,
   });
 }
