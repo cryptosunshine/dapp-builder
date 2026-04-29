@@ -350,6 +350,8 @@ function buildFrontendPrompt(input: RunAgentGeneratedDappWorkflowInput) {
   return clampPrompt(`Frontend agent. Return only JSON: {"summary":"...","files":[{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."},{"path":"src/styles.css","content":"..."}]}.
 Generate compact React source directly from the context. Product-like, not ABI scan. Use only methods in context. No secrets.
 Do not include package.json, vite.config.js, dependencies, markdown, or explanations.
+If the context contains ERC20/token methods, the generated app must include real token actions for available methods such as balanceOf, transfer, allowance, approve, decimals, symbol, and totalSupply. Do not hide available ERC20 actions just because the page should not look like a raw ABI dump.
+For ERC20 pages, organize those methods as product flows: wallet balance, send tokens, approval safety, allowance check, and advanced token actions.
 The app should include wallet connection UI, primary user flow, safety notes, and compact advanced method access.
 
 Context:

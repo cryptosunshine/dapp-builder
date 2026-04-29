@@ -41,6 +41,75 @@ const SYMBOL_CALL_ABI = [
   },
 ] as const;
 
+const ERC1967_IMPLEMENTATION_SLOT = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc';
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+function normalizeImplementationAddress(value: unknown) {
+  if (typeof value !== 'string' || !value.startsWith('0x') || value.length < 42) {
+    return undefined;
+  }
+  const address = `0x${value.slice(-40)}`;
+  if (!isAddress(address) || address.toLowerCase() === ZERO_ADDRESS) {
+    return undefined;
+  }
+  return address;
+}
+
+function hasCallableFunctions(abi: AbiEntry[]) {
+  return abi.some((entry) => entry.type === 'function' && entry.name);
+}
+
+function looksLikeUpgradeableProxyAbi(abi: AbiEntry[]) {
+  const names = new Set(abi.map((entry) => entry.name).filter(Boolean));
+  return !hasCallableFunctions(abi) && (names.has('Upgraded') || names.has('AdminChanged')) && abi.some((entry) => entry.type === 'fallback');
+}
+
+function createChainClient() {
+  return createPublicClient({
+    chain: undefined,
+    transport: http(appConfig.confluxESpaceTestnetRpcUrl),
+  });
+}
+
+async function resolveErc1967ImplementationAddress(address: string) {
+  const publicClient = createChainClient();
+  const storage = await publicClient
+    .getStorageAt({
+      address: address as `0x${string}`,
+      slot: ERC1967_IMPLEMENTATION_SLOT,
+    })
+    .catch(() => undefined);
+  return normalizeImplementationAddress(storage);
+}
+
+function normalizeExplorerResult(payload: { result?: Record<string, unknown> } | Record<string, unknown>) {
+  return ('result' in payload ? payload.result : payload) as Record<string, unknown> | undefined;
+}
+
+async function fetchExplorerResult(address: string) {
+  const query = ABI_FIELDS.map((field) => `fields=${field}`).join('&');
+  const url = `${appConfig.confluxScanBaseUrl}/v1/contract/${address}?${query}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch contract metadata: ${response.status} ${response.statusText}`);
+  }
+
+  const payload = (await response.json()) as { result?: Record<string, unknown> } | Record<string, unknown>;
+  return normalizeExplorerResult(payload);
+}
+
+function contractNameFromExplorer(result: Record<string, unknown> | undefined) {
+  const verifyInfo = result?.verifyInfo as { contractName?: string } | undefined;
+  return (typeof result?.name === 'string' && result.name.trim() ? result.name : undefined) ||
+    (typeof verifyInfo?.contractName === 'string' && verifyInfo.contractName.trim() ? verifyInfo.contractName : undefined);
+}
+
+function normalizeMetadataResult(result: Record<string, unknown> | undefined) {
+  const abi = normalizeAbi(result?.abi);
+  return { abi, explorerName: contractNameFromExplorer(result), metadata: result };
+}
+
 function normalizeAbi(rawAbi: unknown): AbiEntry[] {
   if (rawAbi == null || rawAbi === '') {
     throw new Error('Contract ABI is unavailable.');
@@ -73,10 +142,7 @@ function hasZeroArgViewStringMethod(abi: AbiEntry[], name: string) {
 }
 
 async function resolveContractNameFromChain(address: string, abi: AbiEntry[]) {
-  const publicClient = createPublicClient({
-    chain: undefined,
-    transport: http(appConfig.confluxESpaceTestnetRpcUrl),
-  });
+  const publicClient = createChainClient();
 
   const name = hasZeroArgViewStringMethod(abi, 'name')
     ? await publicClient
@@ -114,27 +180,35 @@ export async function fetchContractMetadata(address: string) {
     throw new Error('Invalid contract address.');
   }
 
-  const query = ABI_FIELDS.map((field) => `fields=${field}`).join('&');
-  const url = `${appConfig.confluxScanBaseUrl}/v1/contract/${address}?${query}`;
-  const response = await fetch(url);
+  const result = await fetchExplorerResult(address);
+  const normalized = normalizeMetadataResult(result);
+  let abi = normalized.abi;
+  let contractName = normalized.explorerName;
+  let metadata = normalized.metadata;
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch contract metadata: ${response.status} ${response.statusText}`);
+  if (looksLikeUpgradeableProxyAbi(abi)) {
+    const implementationAddress = await resolveErc1967ImplementationAddress(address);
+    if (implementationAddress) {
+      const implementationResult = await fetchExplorerResult(implementationAddress);
+      const implementation = normalizeMetadataResult(implementationResult);
+      if (hasCallableFunctions(implementation.abi)) {
+        abi = implementation.abi;
+        contractName = implementation.explorerName;
+        metadata = {
+          ...metadata,
+          proxyAddress: address,
+          implementationAddress,
+          implementation: implementation.metadata,
+        };
+      }
+    }
   }
 
-  const payload = (await response.json()) as { result?: Record<string, unknown> } | Record<string, unknown>;
-  const result = ('result' in payload ? payload.result : payload) as Record<string, unknown> | undefined;
-  const abi = normalizeAbi(result?.abi);
-  const verifyInfo = result?.verifyInfo as { contractName?: string } | undefined;
   const chainResolvedName = await resolveContractNameFromChain(address, abi).catch(() => undefined);
 
   return {
     abi,
-    contractName:
-      (typeof result?.name === 'string' ? result.name : undefined) ||
-      (typeof verifyInfo?.contractName === 'string' ? verifyInfo.contractName : undefined) ||
-      chainResolvedName ||
-      'Unknown Contract',
-    metadata: result,
+    contractName: contractName || chainResolvedName || 'Unknown Contract',
+    metadata,
   };
 }

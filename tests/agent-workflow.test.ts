@@ -90,6 +90,7 @@ describe('agent generated dApp workflow', () => {
       invokeAgent: async ({ prompt }) => {
         expect(prompt).toContain('src/styles.css');
         expect(prompt).toContain('Do not include package.json');
+        expect(prompt).toContain('balanceOf, transfer, allowance, approve');
         return '```json\n{"summary":"Generated React token dashboard.","files":[{"path":"index.html","content":"<div id=\\"root\\"></div><script type=\\"module\\" src=\\"/src/App.jsx\\"></script>"},{"path":"src/App.jsx","content":"import \\"./styles.css\\"; export default function App(){ return <main>Agent token dashboard</main>; }"},{"path":"src/styles.css","content":"main { color: #111827; }"}]}\n```';
       },
     });
