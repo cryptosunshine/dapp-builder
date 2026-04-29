@@ -159,6 +159,39 @@ describe('PreviewPage', () => {
     expect(screen.queryByRole('button', { name: /claim/i })).not.toBeInTheDocument();
   });
 
+  test('shows a fallback notice when the generated app used local fallback mode', () => {
+    const generatedTask: BuilderTask = {
+      ...task,
+      result: {
+        ...task.result!,
+        generatedApp: {
+          taskId: 'task-1',
+          sourceDir: 'data/generated-dapps/task-1/source',
+          distDir: 'data/generated-dapps/task-1/dist',
+          previewUrl: '/generated-dapps/task-1/dist/index.html',
+          buildStatus: 'success',
+          generationMode: 'fallback',
+          productPlan: { role: 'product-manager', title: 'Token flow', markdown: '# Token flow' },
+          designSpec: { role: 'designer', title: 'Token dashboard', markdown: '# Token dashboard' },
+          frontendSummary: 'Generated deterministic fallback React app after frontend agent failed.',
+          validationWarnings: [],
+        },
+      },
+    };
+
+    render(
+      <PreviewPage
+        task={generatedTask}
+        walletState={{ account: null, chainId: null, isConnecting: false }}
+        onConnectWallet={vi.fn()}
+        onRunMethod={vi.fn()}
+        activeResult={null}
+      />,
+    );
+
+    expect(screen.getByText(/local fallback preview/i)).toBeInTheDocument();
+  });
+
   test('renders warnings and method labels from pageConfig', () => {
     render(
       <PreviewPage

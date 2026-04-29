@@ -55,9 +55,9 @@ describe('agent generated dApp workflow', () => {
         return {
           summary: 'Generated React token dashboard.',
           files: [
-            { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
             { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-            { path: 'src/App.jsx', content: 'export default function App(){ return <main>Agent token dashboard</main>; }' },
+            { path: 'src/App.jsx', content: "import './styles.css'; export default function App(){ return <main>Agent token dashboard</main>; }" },
+            { path: 'src/styles.css', content: 'main { color: #111827; }' },
           ],
         };
       },
@@ -69,6 +69,7 @@ describe('agent generated dApp workflow', () => {
     expect(progress).toHaveBeenCalledWith('frontend_generation', expect.any(String));
     expect(progress).toHaveBeenCalledWith('validating_generated_app', expect.any(String));
     expect(artifact.previewUrl).toBe('/generated-dapps/task-agent/dist/index.html');
+    expect(artifact.generationMode).toBe('agent');
     expect(artifact.productPlan.markdown).toContain('Direct frontend generation');
     expect(artifact.designSpec.markdown).toContain('MVP interface');
   });
@@ -86,8 +87,10 @@ describe('agent generated dApp workflow', () => {
       capabilities: { kind: 'token', confidence: 0.9, primitives: [], unsupported: [] },
       normalizedSkills: { skills: ['token-dashboard'], businessSkills: ['token-dashboard'], walletSkills: [], experienceSkills: [], diagnostics: [] },
       build: false,
-      invokeAgent: async () => {
-        return '```json\n{"summary":"Generated React token dashboard.","files":[{"path":"package.json","content":"{\\"type\\":\\"module\\",\\"scripts\\":{\\"build\\":\\"vite build\\"}}"},{"path":"index.html","content":"<div id=\\"root\\"></div><script type=\\"module\\" src=\\"/src/App.jsx\\"></script>"},{"path":"src/App.jsx","content":"export default function App(){ return <main>Agent token dashboard</main>; }"}]}\n```';
+      invokeAgent: async ({ prompt }) => {
+        expect(prompt).toContain('src/styles.css');
+        expect(prompt).toContain('Do not include package.json');
+        return '```json\n{"summary":"Generated React token dashboard.","files":[{"path":"index.html","content":"<div id=\\"root\\"></div><script type=\\"module\\" src=\\"/src/App.jsx\\"></script>"},{"path":"src/App.jsx","content":"import \\"./styles.css\\"; export default function App(){ return <main>Agent token dashboard</main>; }"},{"path":"src/styles.css","content":"main { color: #111827; }"}]}\n```';
       },
     });
 
@@ -147,9 +150,9 @@ describe('agent generated dApp workflow', () => {
         return {
           summary: 'Generated React token dashboard.',
           files: [
-            { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
             { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-            { path: 'src/App.jsx', content: 'export default function App(){ return <main>Agent token dashboard</main>; }' },
+            { path: 'src/App.jsx', content: "import './styles.css'; export default function App(){ return <main>Agent token dashboard</main>; }" },
+            { path: 'src/styles.css', content: 'main { color: #111827; }' },
           ],
         };
       },
@@ -209,6 +212,7 @@ describe('agent generated dApp workflow', () => {
     expect(seenStages).toEqual(['frontend_generation']);
     expect(artifact.frontendSummary).toContain('fallback');
     expect(artifact.buildStatus).toBe('success');
+    expect(artifact.generationMode).toBe('fallback');
     expect(artifact.productPlan.markdown).toContain('Direct frontend generation');
     expect(artifact.designSpec.markdown).toContain('MVP interface');
   });

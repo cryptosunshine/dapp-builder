@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { access, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
@@ -11,9 +11,8 @@ afterEach(async () => {
 });
 
 const validFiles = [
-  { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
   { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-  { path: 'src/App.jsx', content: 'export default function App(){ return <main>Agent generated dApp</main>; }' },
+  { path: 'src/App.jsx', content: "import './styles.css'; export default function App(){ return <main>Agent generated dApp</main>; }" },
   { path: 'src/styles.css', content: 'main { color: #111827; }' },
 ];
 
@@ -34,8 +33,39 @@ describe('generated app artifacts', () => {
 
     expect(artifact.previewUrl).toBe('/generated-dapps/task-safe/dist/index.html');
     expect(artifact.buildStatus).toBe('skipped');
+    expect(artifact.generationMode).toBe('agent');
     expect(await readFile(join(rootDir, 'task-safe/source/src/App.jsx'), 'utf8')).toContain('Agent generated dApp');
+    expect(await readFile(join(rootDir, 'task-safe/source/package.json'), 'utf8')).toContain('"vite build"');
+    expect(await readFile(join(rootDir, 'task-safe/source/vite.config.js'), 'utf8')).toContain("base: './'");
     await expect(readFile(join(rootDir, 'task-safe/source/src/App.jsx'), 'utf8')).resolves.not.toContain('secret-key');
+  });
+
+  test('builds generated React source with relative dist asset paths', async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), 'generated-dapps-'));
+    cleanupPaths.push(rootDir);
+
+    const artifact = await createGeneratedAppArtifact({
+      taskId: 'task-build',
+      rootDir,
+      files: [
+        ...validFiles,
+        { path: 'package.json', content: '{"scripts":{"postinstall":"echo should-not-run"}}' },
+        { path: 'vite.config.js', content: 'export default { base: "/" }' },
+      ],
+      productPlan: { role: 'product-manager', title: 'Token flow', markdown: '# Token flow' },
+      designSpec: { role: 'designer', title: 'Token design', markdown: '# Token design' },
+      build: true,
+    });
+
+    const distIndex = await readFile(join(rootDir, 'task-build/dist/index.html'), 'utf8');
+    const assetPath = distIndex.match(/(?:src|href)="(\.\/assets\/[^"]+)"/)?.[1];
+
+    expect(artifact.buildStatus).toBe('success');
+    expect(distIndex).not.toContain('"/assets/');
+    expect(assetPath).toBeTruthy();
+    await expect(access(join(rootDir, 'task-build/dist', assetPath!.replace(/^\.\//, '')))).resolves.toBeUndefined();
+    await expect(readFile(join(rootDir, 'task-build/source/package.json'), 'utf8')).resolves.not.toContain('postinstall');
+    await expect(readFile(join(rootDir, 'task-build/source/vite.config.js'), 'utf8')).resolves.toContain("base: './'");
   });
 
   test('rejects path traversal and missing required React entry files', async () => {

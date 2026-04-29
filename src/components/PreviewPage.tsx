@@ -30,6 +30,11 @@ export function PreviewPage({ task, walletState, onConnectWallet, onRunMethod, a
   if (generatedApp?.previewUrl) {
     return (
       <div className="generated-app-frame-shell">
+        {generatedApp.generationMode === 'fallback' && (
+          <div className="generated-app-frame-notice">
+            Local fallback preview. The model-generated React source did not validate, so this task is showing a stable local build.
+          </div>
+        )}
         <iframe
           className="generated-app-frame"
           src={generatedApp.previewUrl}

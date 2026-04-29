@@ -277,8 +277,9 @@ function createWorkflowDocuments(input: RunAgentGeneratedDappWorkflowInput): { p
 }
 
 function buildFrontendPrompt(input: RunAgentGeneratedDappWorkflowInput) {
-  return clampPrompt(`Frontend agent. Return only JSON: {"summary":"...","files":[{"path":"package.json","content":"..."},{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."}]}.
-Generate a minimal complete Vite React app directly from the context. Keep code compact. Product-like, not ABI scan. Use only methods in context. No secrets.
+  return clampPrompt(`Frontend agent. Return only JSON: {"summary":"...","files":[{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."},{"path":"src/styles.css","content":"..."}]}.
+Generate compact React source directly from the context. Product-like, not ABI scan. Use only methods in context. No secrets.
+Do not include package.json, vite.config.js, dependencies, markdown, or explanations.
 The app should include wallet connection UI, primary user flow, safety notes, and compact advanced method access.
 
 Context:
@@ -316,6 +317,7 @@ function createFallbackFrontendApp(
 
   const appSource = `import React from 'react';
 import { createRoot } from 'react-dom/client';
+import './styles.css';
 
 const data = ${safeJsonForSource(sourceData)};
 
@@ -375,8 +377,10 @@ function App() {
   );
 }
 
-const style = document.createElement('style');
-style.textContent = \`
+createRoot(document.getElementById('root')).render(<App />);
+`;
+
+  const styleSource = `
   :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0b1020; color: #eef3ff; }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top left, #1b365d 0, transparent 34rem), #0b1020; }
@@ -399,17 +403,14 @@ style.textContent = \`
   .method { display: grid; gap: 8px; }
   .method strong { color: #f8fafc; }
   @media (max-width: 820px) { .hero, .workspace { grid-template-columns: 1fr; } .shell { padding-top: 24px; } }
-\`;
-document.head.appendChild(style);
-createRoot(document.getElementById('root')).render(<App />);
 `;
 
   return generatedFrontendAppSchema.parse({
     summary: `Generated deterministic fallback React app after frontend agent failed: ${describeAgentApiError(error)}`,
     files: [
-      { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"},"dependencies":{"@vitejs/plugin-react":"^4.4.1","vite":"^6.3.5","typescript":"^5.8.3","react":"^18.3.1","react-dom":"^18.3.1"}}' },
       { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
       { path: 'src/App.jsx', content: appSource },
+      { path: 'src/styles.css', content: styleSource },
     ],
   });
 }
@@ -428,6 +429,7 @@ export async function runAgentGeneratedDappWorkflow(input: RunAgentGeneratedDapp
 
   await reportProgress(input.onProgress, 'frontend_generation', 'Frontend agent is generating the React dApp source.');
   let frontendApp: GeneratedFrontendApp;
+  let generationMode: GeneratedAppArtifact['generationMode'] = 'agent';
   try {
     frontendApp = coerceGeneratedFrontendApp(await invokeAgent({
       stage: 'frontend_generation',
@@ -436,17 +438,37 @@ export async function runAgentGeneratedDappWorkflow(input: RunAgentGeneratedDapp
     }));
   } catch (error) {
     frontendApp = createFallbackFrontendApp(input, productPlan, designSpec, error);
+    generationMode = 'fallback';
   }
 
   await reportProgress(input.onProgress, 'validating_generated_app', 'Writing and validating the generated React app.');
-  return createGeneratedAppArtifact({
-    taskId: input.taskId,
-    rootDir: input.rootDir,
-    files: frontendApp.files,
-    productPlan,
-    designSpec,
-    frontendSummary: frontendApp.summary,
-    apiKey: input.input.modelConfig?.apiKey ?? input.input.apiKey,
-    build: input.build,
-  });
+  try {
+    return await createGeneratedAppArtifact({
+      taskId: input.taskId,
+      rootDir: input.rootDir,
+      files: frontendApp.files,
+      productPlan,
+      designSpec,
+      frontendSummary: frontendApp.summary,
+      apiKey: input.input.modelConfig?.apiKey ?? input.input.apiKey,
+      build: input.build,
+      generationMode,
+    });
+  } catch (error) {
+    if (generationMode === 'fallback') {
+      throw error;
+    }
+    const fallbackApp = createFallbackFrontendApp(input, productPlan, designSpec, error);
+    return createGeneratedAppArtifact({
+      taskId: input.taskId,
+      rootDir: input.rootDir,
+      files: fallbackApp.files,
+      productPlan,
+      designSpec,
+      frontendSummary: fallbackApp.summary,
+      apiKey: input.input.modelConfig?.apiKey ?? input.input.apiKey,
+      build: input.build,
+      generationMode: 'fallback',
+    });
+  }
 }

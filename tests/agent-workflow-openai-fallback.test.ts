@@ -34,6 +34,17 @@ const analysis: AnalyzeContractResult = {
   warnings: [],
 };
 
+function generatedReactApp(content: string) {
+  return {
+    summary: 'Generated React token dashboard.',
+    files: [
+      { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+      { path: 'src/App.jsx', content: `import './styles.css'; export default function App(){ return <main>${content}</main>; }` },
+      { path: 'src/styles.css', content: 'main { color: #111827; }' },
+    ],
+  };
+}
+
 beforeEach(() => {
   vi.unstubAllGlobals();
 });
@@ -52,14 +63,7 @@ describe('agent workflow OpenAI-compatible fallback', () => {
       json: async () => ({
         choices: [{
           message: {
-            content: JSON.stringify({
-              summary: 'Generated React token dashboard.',
-              files: [
-                { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
-                { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-                { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated with direct model API</main>; }' },
-              ],
-            }),
+            content: JSON.stringify(generatedReactApp('Generated with direct model API')),
           },
         }],
       }),
@@ -89,14 +93,7 @@ describe('agent workflow OpenAI-compatible fallback', () => {
       json: async () => ({
         choices: [{
           message: {
-            content: JSON.stringify({
-              summary: 'Generated React token dashboard.',
-              files: [
-                { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
-                { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-                { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated with API fallback</main>; }' },
-              ],
-            }),
+            content: JSON.stringify(generatedReactApp('Generated with API fallback')),
           },
         }],
       }),
@@ -136,14 +133,7 @@ describe('agent workflow OpenAI-compatible fallback', () => {
         json: async () => ({
           choices: [{
             message: {
-              content: JSON.stringify({
-                summary: 'Generated React token dashboard.',
-                files: [
-                  { path: 'package.json', content: '{"type":"module","scripts":{"build":"vite build"}}' },
-                  { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-                  { path: 'src/App.jsx', content: 'export default function App(){ return <main>Generated after retry</main>; }' },
-                ],
-              }),
+              content: JSON.stringify(generatedReactApp('Generated after retry')),
             },
           }],
         }),

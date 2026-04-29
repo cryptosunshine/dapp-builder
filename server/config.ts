@@ -9,6 +9,7 @@ export const appConfig = {
   confluxESpaceTestnetRpcUrl: process.env.CONFLUX_ESPACE_TESTNET_RPC_URL ?? 'https://evmtestnet.confluxrpc.com',
   agentApiTimeoutMs: Number(process.env.AGENT_API_TIMEOUT_MS ?? 180_000),
   agentApiMaxAttempts: Number(process.env.AGENT_API_MAX_ATTEMPTS ?? 2),
+  generatedAppBuildTimeoutMs: Number(process.env.GENERATED_APP_BUILD_TIMEOUT_MS ?? 30_000),
   modelAccounts: [
     {
       id: 'nvidia-deepseek-v4-pro',

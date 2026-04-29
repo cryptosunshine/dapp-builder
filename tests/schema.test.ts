@@ -104,6 +104,7 @@ describe('guided generation shared schema', () => {
     });
 
     expect(artifact.previewUrl).toBe('/generated-dapps/task-123/dist/index.html');
+    expect(artifact.generationMode).toBe('agent');
     expect(artifact.productPlan.role).toBe('product-manager');
     expect(builderTaskResultSchema.parse({
       pageConfig: {
