@@ -9,49 +9,26 @@ vi.mock('../src/lib/api', () => ({
   getTask: vi.fn(),
 }));
 
-vi.mock('../src/lib/wallet', () => ({
-  connectWallet: vi.fn(async () => ({ account: null, chainId: null, isConnecting: false, error: null })),
-  getWalletState: vi.fn(async () => ({ account: null, chainId: null, isConnecting: false, error: null })),
-}));
-
-vi.mock('../src/lib/contract', () => ({
-  runContractMethod: vi.fn(),
-}));
-
 describe('Builder home product layout', () => {
-  test('renders an Aave-style dashboard shell instead of a plain tool form', () => {
+  test('renders a streamlined generator surface without unused navigation or framing modules', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByLabelText(/builder announcement/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/builder navigation/i)).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /builder launchpad/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /launch a wallet-ready dapp from a live contract/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/builder launchpad metrics/i)).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /launchpad actions/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /start generation flow/i })).toHaveAttribute('href', '#generation-inputs');
-    expect(screen.getByRole('link', { name: /review generated sections/i })).toHaveAttribute('href', '#builder-workspace');
-    expect(screen.getByRole('heading', { name: /what ships in the generated page/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/recommended launch path/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /connect wallet/i })).toHaveClass('nav-button--utility');
-    expect(screen.getByRole('button', { name: /view details/i })).toHaveClass('secondary-button');
-    expect(screen.getAllByRole('button', { name: /^details$/i })).toHaveLength(3);
-    screen.getAllByRole('button', { name: /^details$/i }).forEach((button) => {
-      expect(button).toHaveClass('ghost-button');
-    });
-    expect(screen.getByRole('button', { name: /all categories/i })).toHaveClass('ghost-button');
-    expect(screen.getByLabelText(/builder workflow table/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /start generation/i })).toHaveAttribute('href', '#generation-inputs');
     expect(screen.getByLabelText(/generation inputs/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /generation inputs/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /use sample contract/i })).toHaveClass('secondary-button');
-    expect(screen.getByRole('button', { name: /clear form/i })).toHaveClass('ghost-button');
     expect(screen.getByRole('button', { name: /generate dapp preview/i })).toHaveClass('primary-button');
-    expect(screen.getByRole('heading', { name: /task delivery/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /safety rails before users click/i })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: /builder launchpad/i })).toHaveClass('builder-context-header--elevated');
+    expect(screen.getByRole('button', { name: /token dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /model account/i })).toHaveValue('local-hermes-agent');
+    expect(screen.queryByLabelText(/builder announcement/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/product framing/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /use sample contract/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /clear form/i })).not.toBeInTheDocument();
     expect(screen.getByText(/submit a contract request to generate a preview/i).closest('.status-card')).toHaveClass('status-card--builder-home');
   });
 });

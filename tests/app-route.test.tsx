@@ -38,6 +38,18 @@ const completedTask = {
       methods: [],
       sections: [],
     },
+    generatedApp: {
+      taskId: 'task-1',
+      sourceDir: '/tmp/task-1/source',
+      distDir: '/tmp/task-1/dist',
+      previewUrl: '/generated-dapps/task-1/dist/index.html',
+      buildStatus: 'success',
+      generationMode: 'hermes',
+      productPlan: { role: 'product-manager', title: 'Plan', markdown: 'Plan' },
+      designSpec: { role: 'designer', title: 'Design', markdown: 'Design' },
+      frontendSummary: 'Generated app ready.',
+      validationWarnings: [],
+    },
   },
 };
 
@@ -56,7 +68,7 @@ vi.mock('../src/lib/contract', () => ({
 }));
 
 describe('App route aliases', () => {
-  test('renders the task preview page on /app/:taskId', async () => {
+  test('renders generation status and a generated app launch button on /app/:taskId', async () => {
     mockedGetTask.mockResolvedValueOnce(completedTask);
 
     render(
@@ -66,8 +78,13 @@ describe('App route aliases', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Alias Preview Page')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /your dapp page is live/i })).toBeInTheDocument();
     });
+    expect(screen.getByRole('link', { name: /open generated app/i })).toHaveAttribute(
+      'href',
+      '/generated-dapps/task-1/dist/index.html',
+    );
+    expect(screen.queryByText('Alias Preview Page')).not.toBeInTheDocument();
   });
 
   test('renders a failure-specific task detail state instead of a waiting message', async () => {
@@ -88,13 +105,13 @@ describe('App route aliases', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/task failed before a preview could be generated/i)).toBeInTheDocument();
+      expect(screen.getByText(/task failed before an app could be generated/i)).toBeInTheDocument();
     });
 
     expect(screen.getByText(/adjust the contract or inputs and submit a new task/i)).toBeInTheDocument();
-    expect(screen.getByText(/task failed before a preview could be generated/i).closest('.empty-state')).toHaveClass('empty-state--preview-error');
+    expect(screen.getByText(/task failed before an app could be generated/i).closest('.empty-state')).toHaveClass('empty-state--preview-error');
     expect(screen.queryByRole('link', { name: /open shareable preview/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/preview will appear when the backend finishes processing the task/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/generation is running. the app link will appear here when the backend finishes/i)).not.toBeInTheDocument();
   });
 
   test('renders a readable waiting state while the generated app is still processing', async () => {
@@ -115,12 +132,12 @@ describe('App route aliases', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/preview will appear when the backend finishes processing the task/i)).toBeInTheDocument();
+      expect(screen.getByText(/generation is running. the app link will appear here when the backend finishes/i)).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/preview will appear when the backend finishes processing the task/i).closest('.empty-state')).toHaveClass(
+    expect(screen.getByText(/generation is running. the app link will appear here when the backend finishes/i).closest('.empty-state')).toHaveClass(
       'empty-state--preview-waiting',
     );
-    expect(screen.queryByTitle('Agent generated dApp preview')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /open generated app/i })).not.toBeInTheDocument();
   });
 });

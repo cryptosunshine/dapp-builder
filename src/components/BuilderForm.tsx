@@ -12,65 +12,30 @@ const initialState: BuilderTaskInput = {
   chain: 'conflux-espace-testnet',
   skills: ['auto', 'injected-wallet', 'guided-flow', 'risk-explainer'],
   skill: 'auto',
-  model: 'deepseek-ai/deepseek-v4-pro',
+  model: 'current-hermes-model',
   apiKey: '',
   modelConfig: {
-    providerId: 'nvidia-deepseek-v4-pro',
-    baseUrl: 'https://integrate.api.nvidia.com/v1',
-    model: 'deepseek-ai/deepseek-v4-pro',
+    providerId: 'local-hermes-agent',
+    baseUrl: 'http://localhost',
+    model: 'current-hermes-model',
     apiKey: '',
   },
 };
 
-const sampleContractAddress = '0x1234567890123456789012345678901234567890';
 
 const validAddressRe = /^0x[a-fA-F0-9]{40}$/;
 
-const skillGroups = [
-  {
-    title: 'Business direction',
-    skills: [
-      ['auto', 'Auto'],
-      ['token-dashboard', 'Token dashboard'],
-      ['nft-mint-experience', 'NFT mint experience'],
-      ['voting-participation', 'Voting participation'],
-    ],
-  },
-  {
-    title: 'Wallet',
-    skills: [
-      ['injected-wallet', 'Injected wallet'],
-      ['eip-6963-wallet-discovery', 'EIP-6963 wallet discovery'],
-      ['chain-switching', 'Chain switching'],
-    ],
-  },
-  {
-    title: 'Experience',
-    skills: [
-      ['guided-flow', 'Guided flow'],
-      ['transaction-timeline', 'Transaction timeline'],
-      ['risk-explainer', 'Risk explainer'],
-      ['explorer-links', 'Explorer links'],
-    ],
-  },
+const primarySkillOptions = [
+  ['auto', 'Auto route', 'Let the builder choose the best product flow.'],
+  ['token-dashboard', 'Token dashboard', 'Balances, transfers, approvals, and safety rails.'],
+  ['nft-mint-experience', 'NFT mint', 'Mint-first page with ownership and collection context.'],
+  ['voting-participation', 'Voting', 'Proposal review and guided voting actions.'],
 ] as const;
 
 const modelAccounts = [
   {
-    id: 'nvidia-deepseek-v4-pro',
-    label: 'NVIDIA DeepSeek V4 Pro',
-    baseUrl: 'https://integrate.api.nvidia.com/v1',
-    model: 'deepseek-ai/deepseek-v4-pro',
-  },
-  {
-    id: 'openai-gpt-5.4',
-    label: 'OpenAI GPT-5.4',
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-5.4',
-  },
-  {
     id: 'local-hermes-agent',
-    label: 'Local Hermes Agent',
+    label: 'Built-in generator',
     baseUrl: 'http://localhost',
     model: 'current-hermes-model',
   },
@@ -91,15 +56,14 @@ function isAddressInvalid(value: string): boolean {
   return value.length > 0 && !validAddressRe.test(value);
 }
 
-function toggleSkill(current: BuilderTaskInput, skill: SkillName): BuilderTaskInput {
-  const skills = current.skills.includes(skill)
-    ? current.skills.filter((entry) => entry !== skill)
-    : [...current.skills, skill];
+const supportingSkills: SkillName[] = ['injected-wallet', 'guided-flow', 'risk-explainer'];
 
+function selectPrimarySkill(current: BuilderTaskInput, skill: SkillName): BuilderTaskInput {
+  const skills = skill === 'auto' ? ['auto', ...supportingSkills] : [skill, ...supportingSkills];
   return {
     ...current,
     skills,
-    skill: skills[0] ?? 'auto',
+    skill,
   };
 }
 
@@ -163,24 +127,25 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
         </label>
 
         <fieldset className="field field-full skill-fieldset">
-          <legend>Skills</legend>
-          {skillGroups.map((group) => (
-            <div key={group.title} className="skill-group">
-              <strong>{group.title}</strong>
-              <div className="skill-grid">
-                {group.skills.map(([skill, label]) => (
-                  <label key={skill} className="checkbox-option">
-                    <input
-                      type="checkbox"
-                      checked={formState.skills.includes(skill)}
-                      onChange={() => setFormState((current) => toggleSkill(current, skill))}
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
+          <legend>Experience goal</legend>
+          <div className="skill-choice-grid">
+            {primarySkillOptions.map(([skill, label, description]) => {
+              const isSelected = formState.skill === skill;
+              return (
+                <button
+                  key={skill}
+                  type="button"
+                  className={`skill-choice${isSelected ? ' skill-choice--selected' : ''}`}
+                  aria-pressed={isSelected}
+                  onClick={() => setFormState((current) => selectPrimarySkill(current, skill))}
+                >
+                  <strong>{label}</strong>
+                  <span>{description}</span>
+                </button>
+              );
+            })}
+          </div>
+          <span className="field-hint">Wallet connection, guided flow, and safety copy are included automatically.</span>
         </fieldset>
 
         <label className="field field-full">
@@ -212,8 +177,8 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
           </select>
           <span className="field-hint">
             {isHermesModel
-              ? "Local Hermes uses this server's configured Hermes model and can edit the generated source workspace."
-              : 'Built-in accounts use server-side keys. Choose custom to provide your own Base URL and API key.'}
+              ? 'Default generator. Choose Custom API only if you want to use your own model endpoint.'
+              : 'Custom API keys are used only for this generation task and are not persisted.'}
           </span>
         </label>
 
@@ -282,22 +247,6 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
 
       <div className="button-row">
         {submitError && <span className="field-hint hint-warn submit-error">{submitError}</span>}
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => setFormState((current) => ({ ...current, contractAddress: sampleContractAddress }))}
-        >
-          Use sample contract
-        </button>
-
-        <button
-          type="button"
-          className="ghost-button"
-          onClick={() => { setFormState(structuredClone(initialState)); setSubmitError(null); }}
-        >
-          Clear form
-        </button>
-
         <button type="submit" className="primary-button" disabled={isSubmitting}>
           {isSubmitting ? 'Creating task...' : 'Generate dApp preview'}
         </button>
