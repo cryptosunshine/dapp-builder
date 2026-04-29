@@ -96,6 +96,35 @@ describe('BuilderForm', () => {
     });
   });
 
+
+
+  test('submits the local Hermes model account without custom API fields', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+
+    render(<BuilderForm onSubmit={onSubmit} isSubmitting={false} />);
+
+    await user.selectOptions(screen.getByLabelText(/model account/i), 'local-hermes-agent');
+
+    expect(screen.getByText(/uses this server's configured Hermes model/i)).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /^api key$/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^model$/i)).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/contract address/i), '0x1234567890123456789012345678901234567890');
+    await user.click(screen.getByRole('button', { name: /generate dapp preview/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      model: 'current-hermes-model',
+      apiKey: '',
+      modelConfig: {
+        providerId: 'local-hermes-agent',
+        baseUrl: 'http://localhost',
+        model: 'current-hermes-model',
+        apiKey: '',
+      },
+    }));
+  });
+
   test('submits selected skills and model config', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();

@@ -1,3 +1,7 @@
+import { execFile } from 'node:child_process';
+import { mkdir, readFile, rm } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { promisify } from 'node:util';
 import {
   agentDocumentSchema,
   generatedFrontendAppSchema,
@@ -19,11 +23,15 @@ type AgentStage = 'frontend_generation';
 const maxPromptLength = 16_000;
 const maxDocumentLength = 1_500;
 const maxContextMethods = 30;
+const execFileAsync = promisify(execFile);
+const hermesProviderId = 'local-hermes-agent';
 
 interface InvokeAgentInput {
   stage: AgentStage;
   prompt: string;
   input: BuilderTaskInput;
+  taskId: string;
+  rootDir: string;
 }
 
 interface RunAgentGeneratedDappWorkflowInput {
@@ -248,8 +256,70 @@ async function invokeOpenAiCompatibleAgent(input: BuilderTaskInput, prompt: stri
   );
 }
 
-async function defaultInvokeAgent({ input, prompt }: InvokeAgentInput): Promise<unknown> {
-  return invokeOpenAiCompatibleAgent(input, prompt);
+function isLocalHermesAgent(input: BuilderTaskInput) {
+  return input.modelConfig?.providerId === hermesProviderId;
+}
+
+async function invokeLocalHermesAgent({ prompt, taskId, rootDir }: InvokeAgentInput): Promise<unknown> {
+  const sourceDir = resolve(rootDir, taskId, 'source');
+  await rm(sourceDir, { recursive: true, force: true });
+  await mkdir(resolve(sourceDir, 'src'), { recursive: true });
+
+  const hermesPrompt = `You are generating a React/Vite dApp for dapp-builder.
+
+Use your tools to edit files directly under this source directory only:
+${sourceDir}
+
+Allowed files:
+- index.html
+- src/App.jsx
+- src/styles.css
+
+Rules:
+- Do not edit files outside the source directory.
+- Do not create package.json or vite.config.js; the backend manages them.
+- Do not include secrets.
+- Make the UI product-like, not a scanner or raw ABI dump.
+- index.html must load /src/App.jsx.
+- The React app must be buildable by Vite with React 18.
+
+Generation brief:
+${prompt}
+
+After writing the files, reply with only compact JSON in this exact shape:
+{"summary":"one sentence summary of what you generated"}`;
+
+  const { stdout } = await execFileAsync(appConfig.hermesCommand, ['chat', '-Q', '--toolsets', 'file,terminal', '-q', hermesPrompt], {
+    timeout: appConfig.hermesAgentTimeoutMs,
+    maxBuffer: 2 * 1024 * 1024,
+    cwd: sourceDir,
+  });
+
+  const [html, appSource, styles] = await Promise.all([
+    readFile(resolve(sourceDir, 'index.html'), 'utf8'),
+    readFile(resolve(sourceDir, 'src', 'App.jsx'), 'utf8'),
+    readFile(resolve(sourceDir, 'src', 'styles.css'), 'utf8'),
+  ]);
+  const parsed = parseJsonIfPresent(stdout);
+  const summary = typeof parsed === 'object' && parsed !== null && 'summary' in parsed
+    ? String((parsed as { summary?: unknown }).summary ?? 'Hermes generated React dApp source.')
+    : 'Hermes generated React dApp source.';
+
+  return generatedFrontendAppSchema.parse({
+    summary,
+    files: [
+      { path: 'index.html', content: html },
+      { path: 'src/App.jsx', content: appSource },
+      { path: 'src/styles.css', content: styles },
+    ],
+  });
+}
+
+async function defaultInvokeAgent(agentInput: InvokeAgentInput): Promise<unknown> {
+  if (isLocalHermesAgent(agentInput.input)) {
+    return invokeLocalHermesAgent(agentInput);
+  }
+  return invokeOpenAiCompatibleAgent(agentInput.input, agentInput.prompt);
 }
 
 function buildSharedContext(input: RunAgentGeneratedDappWorkflowInput) {
@@ -429,12 +499,14 @@ export async function runAgentGeneratedDappWorkflow(input: RunAgentGeneratedDapp
 
   await reportProgress(input.onProgress, 'frontend_generation', 'Frontend agent is generating the React dApp source.');
   let frontendApp: GeneratedFrontendApp;
-  let generationMode: GeneratedAppArtifact['generationMode'] = 'agent';
+  let generationMode: GeneratedAppArtifact['generationMode'] = isLocalHermesAgent(input.input) ? 'hermes' : 'agent';
   try {
     frontendApp = coerceGeneratedFrontendApp(await invokeAgent({
       stage: 'frontend_generation',
       prompt: buildFrontendPrompt(input),
       input: input.input,
+      taskId: input.taskId,
+      rootDir: input.rootDir,
     }));
   } catch (error) {
     frontendApp = createFallbackFrontendApp(input, productPlan, designSpec, error);

@@ -25,5 +25,14 @@ export const appConfig = {
       model: 'gpt-5.4',
       apiKey: process.env.OPENAI_API_KEY ?? '',
     },
+    {
+      id: 'local-hermes-agent',
+      label: 'Local Hermes Agent',
+      baseUrl: 'http://localhost',
+      model: 'current-hermes-model',
+      apiKey: '',
+    },
   ],
+  hermesCommand: process.env.HERMES_COMMAND ?? 'hermes',
+  hermesAgentTimeoutMs: Number(process.env.HERMES_AGENT_TIMEOUT_MS ?? 240_000),
 };

@@ -68,6 +68,12 @@ const modelAccounts = [
     baseUrl: 'https://api.openai.com/v1',
     model: 'gpt-5.4',
   },
+  {
+    id: 'local-hermes-agent',
+    label: 'Local Hermes Agent',
+    baseUrl: 'http://localhost',
+    model: 'current-hermes-model',
+  },
 ] as const;
 
 function addressHint(address: string): { text: string; className: string } | null {
@@ -105,6 +111,7 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
   const validation = useMemo(() => addressHint(formState.contractAddress), [formState.contractAddress]);
   const chainMeta = useMemo(() => getChainMeta(formState.chain), [formState.chain]);
   const isCustomModel = formState.modelConfig?.providerId === 'custom';
+  const isHermesModel = formState.modelConfig?.providerId === 'local-hermes-agent';
 
   return (
     <form
@@ -204,7 +211,9 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
             <option value="custom">Custom API</option>
           </select>
           <span className="field-hint">
-            Built-in accounts use server-side keys. Choose custom to provide your own Base URL and API key.
+            {isHermesModel
+              ? "Local Hermes uses this server's configured Hermes model and can edit the generated source workspace."
+              : 'Built-in accounts use server-side keys. Choose custom to provide your own Base URL and API key.'}
           </span>
         </label>
 

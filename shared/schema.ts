@@ -308,7 +308,7 @@ export const generatedAppArtifactSchema = z.object({
   distDir: z.string().min(1),
   previewUrl: z.string().min(1),
   buildStatus: z.enum(['success', 'failed', 'skipped']),
-  generationMode: z.enum(['agent', 'fallback']).default('agent'),
+  generationMode: z.enum(['agent', 'hermes', 'fallback']).default('agent'),
   productPlan: agentDocumentSchema,
   designSpec: agentDocumentSchema,
   frontendSummary: z.string().default(''),

@@ -162,6 +162,48 @@ describe('agent generated dApp workflow', () => {
     expect(Math.max(...promptLengths)).toBeLessThan(18_000);
   });
 
+
+
+  test('preserves Hermes generation mode when the local Hermes account returns source files', async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), 'agent-workflow-'));
+    cleanupPaths.push(rootDir);
+
+    const artifact = await runAgentGeneratedDappWorkflow({
+      taskId: 'task-hermes-agent',
+      rootDir,
+      input: {
+        ...input,
+        apiKey: '',
+        model: 'current-hermes-model',
+        modelConfig: {
+          providerId: 'local-hermes-agent',
+          baseUrl: 'http://localhost',
+          model: 'current-hermes-model',
+          apiKey: '',
+        },
+      },
+      abi: [],
+      analysis,
+      capabilities: { kind: 'token', confidence: 0.9, primitives: [], unsupported: [] },
+      normalizedSkills: { skills: ['token-dashboard'], businessSkills: ['token-dashboard'], walletSkills: [], experienceSkills: [], diagnostics: [] },
+      build: false,
+      invokeAgent: async ({ prompt }) => {
+        expect(prompt).toContain('Product-like, not ABI scan');
+        return {
+          summary: 'Hermes generated React token dashboard.',
+          files: [
+            { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
+            { path: 'src/App.jsx', content: "import './styles.css'; export default function App(){ return <main>Hermes token dashboard</main>; }" },
+            { path: 'src/styles.css', content: 'main { color: #111827; }' },
+          ],
+        };
+      },
+    });
+
+    expect(artifact.frontendSummary).toBe('Hermes generated React token dashboard.');
+    expect(artifact.generationMode).toBe('hermes');
+  });
+
   test('falls back to a deterministic React app when the frontend agent times out', async () => {
     const rootDir = await mkdtemp(join(process.cwd(), '.agent-workflow-frontend-fallback-'));
     cleanupPaths.push(rootDir);
