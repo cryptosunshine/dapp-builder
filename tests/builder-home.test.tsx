@@ -18,6 +18,7 @@ describe('Builder home product layout', () => {
     );
 
     expect(screen.getByLabelText(/builder navigation/i)).toBeInTheDocument();
+    expect(screen.queryByText(/generate a wallet-ready app from a contract/i)).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: /builder launchpad/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /launch a wallet-ready dapp from a live contract/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /start generation/i })).toHaveAttribute('href', '#generation-inputs');

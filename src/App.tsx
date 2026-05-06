@@ -32,7 +32,6 @@ function BuilderHome() {
           <div className="builder-brand-mark">A</div>
           <div>
             <strong>AI dApp Builder</strong>
-            <p>Generate a wallet-ready app from a contract</p>
           </div>
         </div>
       </header>

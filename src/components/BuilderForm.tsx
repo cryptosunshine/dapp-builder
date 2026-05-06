@@ -122,16 +122,18 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
         <label className="field">
           <span>Chain</span>
           <div className="tooltip-anchor">
-            <select
-              value={formState.chain}
-              onChange={(event) => setFormState((current) => ({ ...current, chain: event.target.value as BuilderTaskInput['chain'] }))}
-              onMouseEnter={() => setShowChainTooltip(true)}
-              onMouseLeave={() => setShowChainTooltip(false)}
-              onFocus={() => setShowChainTooltip(true)}
-              onBlur={() => setShowChainTooltip(false)}
-            >
-              <option value="conflux-espace-testnet">Conflux eSpace Testnet</option>
-            </select>
+            <div className="select-shell">
+              <select
+                value={formState.chain}
+                onChange={(event) => setFormState((current) => ({ ...current, chain: event.target.value as BuilderTaskInput['chain'] }))}
+                onMouseEnter={() => setShowChainTooltip(true)}
+                onMouseLeave={() => setShowChainTooltip(false)}
+                onFocus={() => setShowChainTooltip(true)}
+                onBlur={() => setShowChainTooltip(false)}
+              >
+                <option value="conflux-espace-testnet">Conflux eSpace Testnet</option>
+              </select>
+            </div>
             {showChainTooltip && (
               <div className="tooltip-bubble" role="tooltip">
                 <div className="tooltip-row">Chain ID: {chainMeta.chainId}</div>
@@ -188,7 +190,7 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
                   aria-pressed={isSelected}
                   onClick={() => setFormState((current) => toggleAgentSkill(current, skill.id))}
                 >
-                  <span className="agent-skill-card__status">{isSelected ? 'Selected' : 'Add'}</span>
+                  <span className="agent-skill-card__status">{isSelected ? 'Selected' : '+ Add'}</span>
                   <strong>{skill.label}</strong>
                   <span>{skill.description}</span>
                 </button>
@@ -210,31 +212,33 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
 
         <label className="field field-full">
           <span>Model account</span>
-          <select
-            value={formState.modelConfig?.providerId ?? 'custom'}
-            onChange={(event) => {
-              const providerId = event.target.value;
-              const account = modelAccounts.find((entry) => entry.id === providerId);
-              setFormState((current) => ({
-                ...current,
-                model: account?.model ?? current.modelConfig?.model ?? 'gpt-5.4',
-                apiKey: '',
-                modelConfig: account
-                  ? { providerId: account.id, baseUrl: account.baseUrl, model: account.model, apiKey: '' }
-                  : {
-                      providerId: 'custom',
-                      baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
-                      model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
-                      apiKey: current.modelConfig?.apiKey ?? '',
-                    },
-              }));
-            }}
-          >
-            {modelAccounts.map((account) => (
-              <option key={account.id} value={account.id}>{account.label}</option>
-            ))}
-            <option value="custom">Custom API</option>
-          </select>
+          <div className="select-shell">
+            <select
+              value={formState.modelConfig?.providerId ?? 'custom'}
+              onChange={(event) => {
+                const providerId = event.target.value;
+                const account = modelAccounts.find((entry) => entry.id === providerId);
+                setFormState((current) => ({
+                  ...current,
+                  model: account?.model ?? current.modelConfig?.model ?? 'gpt-5.4',
+                  apiKey: '',
+                  modelConfig: account
+                    ? { providerId: account.id, baseUrl: account.baseUrl, model: account.model, apiKey: '' }
+                    : {
+                        providerId: 'custom',
+                        baseUrl: current.modelConfig?.baseUrl ?? 'https://api.openai.com/v1',
+                        model: current.modelConfig?.model ?? current.model ?? 'gpt-5.4',
+                        apiKey: current.modelConfig?.apiKey ?? '',
+                      },
+                }));
+              }}
+            >
+              {modelAccounts.map((account) => (
+                <option key={account.id} value={account.id}>{account.label}</option>
+              ))}
+              <option value="custom">Custom API</option>
+            </select>
+          </div>
           <span className="field-hint">
             {isHermesModel
               ? 'Default generator. Choose Custom API only if you want to use your own model endpoint.'
