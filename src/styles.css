@@ -19,7 +19,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -477,6 +478,81 @@ button {
   box-shadow: 0 14px 28px rgba(86, 116, 255, 0.12);
 }
 
+.agent-skill-fieldset {
+  gap: 12px;
+}
+
+.skill-section-label {
+  color: #52617d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.agent-skill-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.agent-skill-card {
+  display: grid;
+  gap: 6px;
+  min-height: 92px;
+  padding: 14px;
+  text-align: left;
+  color: #17315c;
+  background: #f7f9fc;
+  border: 1px solid #dfe7f2;
+  border-radius: 16px;
+}
+
+.agent-skill-card span {
+  color: #66738f;
+  font-size: 0.84rem;
+}
+
+.agent-skill-card--default {
+  background: linear-gradient(135deg, rgba(47, 194, 203, 0.1), rgba(255, 255, 255, 0.92));
+}
+
+.agent-skill-card--button {
+  position: relative;
+  padding-top: 38px;
+  cursor: pointer;
+}
+
+.agent-skill-card__status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #38506f;
+  background: #eaf0f8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.agent-skill-card--selected {
+  border-color: #8fc9ee;
+  background: linear-gradient(135deg, rgba(178, 88, 255, 0.14), rgba(47, 194, 203, 0.11));
+  box-shadow: 0 14px 28px rgba(86, 116, 255, 0.12);
+}
+
+.agent-skill-card--selected .agent-skill-card__status {
+  color: #fff;
+  background: linear-gradient(90deg, #2fc2cb 0%, #8a5cf6 100%);
+}
+
+.custom-agent-skill-field {
+  margin-top: 2px;
+}
+
 .status-card--task-preview {
   width: min(1280px, 100%);
   padding: 28px 30px;
@@ -630,13 +706,18 @@ button {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid #dbe3ef;
   background: #f7f9fc;
   color: #17233f;
+}
+
+textarea {
+  resize: vertical;
 }
 
 .primary-button,

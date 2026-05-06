@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { BuilderTaskInput, SkillName } from '../types';
+import { defaultGenerationSkillIds, generationSkillCatalog } from '../../shared/generation-skills';
 import { getChainMeta } from '../lib/chains';
 
 interface BuilderFormProps {
@@ -20,6 +21,8 @@ const initialState: BuilderTaskInput = {
     model: 'current-hermes-model',
     apiKey: '',
   },
+  agentSkills: [...defaultGenerationSkillIds],
+  customAgentSkill: '',
 };
 
 
@@ -57,6 +60,19 @@ function isAddressInvalid(value: string): boolean {
 }
 
 const supportingSkills: SkillName[] = ['injected-wallet', 'guided-flow', 'risk-explainer'];
+const defaultAgentSkillOptions = generationSkillCatalog.filter((skill) => skill.source === 'default');
+const githubAgentSkillOptions = generationSkillCatalog.filter((skill) => skill.source === 'github');
+
+function toggleAgentSkill(current: BuilderTaskInput, skillId: string): BuilderTaskInput {
+  const currentSkills = current.agentSkills ?? [...defaultGenerationSkillIds];
+  const nextSkills = currentSkills.includes(skillId)
+    ? currentSkills.filter((id) => id !== skillId)
+    : [...currentSkills, skillId];
+  return {
+    ...current,
+    agentSkills: nextSkills.length > 0 ? nextSkills : [...defaultGenerationSkillIds],
+  };
+}
 
 function selectPrimarySkill(current: BuilderTaskInput, skill: SkillName): BuilderTaskInput {
   const skills = skill === 'auto' ? ['auto', ...supportingSkills] : [skill, ...supportingSkills];
@@ -146,6 +162,50 @@ export function BuilderForm({ onSubmit, isSubmitting }: BuilderFormProps) {
             })}
           </div>
           <span className="field-hint">Wallet connection, guided flow, and safety copy are included automatically.</span>
+        </fieldset>
+
+        <fieldset className="field field-full skill-fieldset agent-skill-fieldset">
+          <legend>Generation skills</legend>
+          <div className="skill-section-label">Default skills loaded for every dApp</div>
+          <div className="agent-skill-list" aria-label="Default generation skills">
+            {defaultAgentSkillOptions.map((skill) => (
+              <div className="agent-skill-card agent-skill-card--default" key={skill.id}>
+                <strong>{skill.label}</strong>
+                <span>{skill.description}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="skill-section-label">Optional GitHub-inspired skills</div>
+          <div className="agent-skill-list" aria-label="Optional GitHub-inspired skills">
+            {githubAgentSkillOptions.map((skill) => {
+              const isSelected = (formState.agentSkills ?? []).includes(skill.id);
+              return (
+                <button
+                  key={skill.id}
+                  type="button"
+                  className={`agent-skill-card agent-skill-card--button${isSelected ? ' agent-skill-card--selected' : ''}`}
+                  aria-pressed={isSelected}
+                  onClick={() => setFormState((current) => toggleAgentSkill(current, skill.id))}
+                >
+                  <span className="agent-skill-card__status">{isSelected ? 'Selected' : 'Add'}</span>
+                  <strong>{skill.label}</strong>
+                  <span>{skill.description}</span>
+                </button>
+              );
+            })}
+          </div>
+          <label className="field custom-agent-skill-field" htmlFor="custom-agent-skill">
+            <span>Custom skill</span>
+            <textarea
+              id="custom-agent-skill"
+              value={formState.customAgentSkill ?? ''}
+              onChange={(event) => setFormState((current) => ({ ...current, customAgentSkill: event.target.value }))}
+              placeholder="Example: make the generated page feel like a DeFi portfolio app with a compact trading ticket."
+              rows={3}
+            />
+          </label>
+          <span className="field-hint">Changing these skills changes the generator prompt. Installed Hermes skills are loaded when available; custom text is injected as generation guidance.</span>
         </fieldset>
 
         <label className="field field-full">

@@ -14,6 +14,7 @@ import {
   type GeneratedFrontendApp,
   type TaskProgress,
 } from '../../shared/schema.js';
+import { describeGenerationSkills } from '../../shared/generation-skills.js';
 import { appConfig } from '../config.js';
 import type { CapabilitySet } from './capabilities.js';
 import { createGeneratedAppArtifact } from './generated-apps.js';
@@ -127,6 +128,8 @@ function compactContext(input: RunAgentGeneratedDappWorkflowInput) {
       contractAddress: input.input.contractAddress,
       chain: input.input.chain,
       skills: sanitizeTaskInput(input.input).skills,
+      agentSkills: sanitizeTaskInput(input.input).agentSkills,
+      customAgentSkill: sanitizeTaskInput(input.input).customAgentSkill,
     },
     analysis: {
       contractAddress: input.analysis.contractAddress,
@@ -260,7 +263,7 @@ function isLocalHermesAgent(input: BuilderTaskInput) {
   return input.modelConfig?.providerId === hermesProviderId;
 }
 
-async function invokeLocalHermesAgent({ prompt, taskId, rootDir }: InvokeAgentInput): Promise<unknown> {
+async function invokeLocalHermesAgent({ prompt, taskId, rootDir, input }: InvokeAgentInput): Promise<unknown> {
   const sourceDir = resolve(rootDir, taskId, 'source');
   await rm(sourceDir, { recursive: true, force: true });
   await mkdir(resolve(sourceDir, 'src'), { recursive: true });
@@ -289,7 +292,9 @@ ${prompt}
 After writing the files, reply with only compact JSON in this exact shape:
 {"summary":"one sentence summary of what you generated"}`;
 
-  const { stdout } = await execFileAsync(appConfig.hermesCommand, ['chat', '-Q', '--toolsets', 'file,terminal', '-q', hermesPrompt], {
+  const generationSkills = describeGenerationSkills(input.agentSkills, input.customAgentSkill);
+  const hermesSkillArgs = generationSkills.hermesSkills.length > 0 ? ['--skills', generationSkills.hermesSkills.join(',')] : [];
+  const { stdout } = await execFileAsync(appConfig.hermesCommand, ['chat', '-Q', '--toolsets', 'file,terminal', ...hermesSkillArgs, '-q', hermesPrompt], {
     timeout: appConfig.hermesAgentTimeoutMs,
     maxBuffer: 2 * 1024 * 1024,
     cwd: sourceDir,
@@ -347,8 +352,13 @@ function createWorkflowDocuments(input: RunAgentGeneratedDappWorkflowInput): { p
 }
 
 function buildFrontendPrompt(input: RunAgentGeneratedDappWorkflowInput) {
+  const generationSkills = describeGenerationSkills(input.input.agentSkills, input.input.customAgentSkill);
+  const defaultSkillLabels = generationSkills.defaultSkills.map((skill) => skill.label).join(', ');
   return clampPrompt(`Frontend agent. Return only JSON: {"summary":"...","files":[{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."},{"path":"src/styles.css","content":"..."}]}.
 Generate compact React source directly from the context. Product-like, not ABI scan. Use only methods in context. No secrets.
+Default generation skills loaded by dapp-builder: ${defaultSkillLabels}.
+Selected generation skills that must influence the output:
+${generationSkills.promptBlock}
 Do not include package.json, vite.config.js, dependencies, markdown, or explanations.
 If the context contains ERC20/token methods, the generated app must include real token actions for available methods such as balanceOf, transfer, allowance, approve, decimals, symbol, and totalSupply. Do not hide available ERC20 actions just because the page should not look like a raw ABI dump.
 For ERC20 pages, organize those methods as product flows: wallet balance, send tokens, approval safety, allowance check, and advanced token actions.

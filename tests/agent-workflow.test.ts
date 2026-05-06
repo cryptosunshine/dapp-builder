@@ -18,6 +18,14 @@ const input: BuilderTaskInput = {
   skills: ['token-dashboard'],
   model: 'gpt-5.4',
   apiKey: 'secret-key',
+  modelConfig: {
+    providerId: 'custom',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-5.4',
+    apiKey: 'secret-key',
+  },
+  agentSkills: ['popular-web-designs', 'aave-dashboard-pattern'],
+  customAgentSkill: 'Prefer a compact DeFi portfolio workspace.',
 };
 
 const analysis: AnalyzeContractResult = {
@@ -91,6 +99,10 @@ describe('agent generated dApp workflow', () => {
         expect(prompt).toContain('src/styles.css');
         expect(prompt).toContain('Do not include package.json');
         expect(prompt).toContain('balanceOf, transfer, allowance, approve');
+        expect(prompt).toContain('Default generation skills loaded by dapp-builder');
+        expect(prompt).toContain('Popular web design systems');
+        expect(prompt).toContain('Aave-style app structure');
+        expect(prompt).toContain('Prefer a compact DeFi portfolio workspace.');
         return '```json\n{"summary":"Generated React token dashboard.","files":[{"path":"index.html","content":"<div id=\\"root\\"></div><script type=\\"module\\" src=\\"/src/App.jsx\\"></script>"},{"path":"src/App.jsx","content":"import \\"./styles.css\\"; export default function App(){ return <main>Agent token dashboard</main>; }"},{"path":"src/styles.css","content":"main { color: #111827; }"}]}\n```';
       },
     });

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeCustomGenerationSkill, normalizeGenerationSkillIds } from './generation-skills.js';
 
 export const supportedChains = ['conflux-espace-testnet'] as const;
 export const supportedChainIds = [71] as const;
@@ -118,7 +119,7 @@ function normalizeSkillList(value: unknown): SkillName[] {
   const normalized = raw
     .map((skill): string => legacySkillMap[String(skill)] ?? String(skill))
     .filter((skill): skill is SkillName => (supportedSkills as readonly string[]).includes(skill));
-  return [...new Set<SkillName>(normalized.length > 0 ? normalized : ['auto'])];
+  return Array.from(new Set<SkillName>(normalized.length > 0 ? normalized : ['auto']));
 }
 
 const builderTaskInputBaseSchema = z.object({
@@ -129,6 +130,8 @@ const builderTaskInputBaseSchema = z.object({
   model: z.string().trim().min(1).optional(),
   apiKey: z.string().optional(),
   modelConfig: modelConfigSchema.optional(),
+  agentSkills: z.array(z.string().trim().min(1)).optional(),
+  customAgentSkill: z.string().optional(),
 });
 
 const transformedBuilderTaskInputSchema = builderTaskInputBaseSchema.transform((input) => {
@@ -148,6 +151,8 @@ const transformedBuilderTaskInputSchema = builderTaskInputBaseSchema.transform((
     model: modelConfig.model,
     apiKey: modelConfig.apiKey,
     modelConfig,
+    agentSkills: normalizeGenerationSkillIds(input.agentSkills),
+    customAgentSkill: normalizeCustomGenerationSkill(input.customAgentSkill),
   };
 });
 
@@ -163,6 +168,8 @@ export const builderTaskRequestSchema = z.object({
   model: z.string().trim().min(1).optional(),
   apiKey: z.string().optional(),
   modelConfig: modelConfigSchema.optional(),
+  agentSkills: z.array(z.string().trim().min(1)).optional(),
+  customAgentSkill: z.string().optional(),
 }).transform((input) => {
   const skills = normalizeSkillList(input.skills ?? input.skill);
   const modelConfig = input.modelConfig ?? {
@@ -180,6 +187,8 @@ export const builderTaskRequestSchema = z.object({
     model: modelConfig.model,
     apiKey: modelConfig.apiKey,
     modelConfig,
+    agentSkills: normalizeGenerationSkillIds(input.agentSkills),
+    customAgentSkill: normalizeCustomGenerationSkill(input.customAgentSkill),
   };
 });
 
@@ -190,6 +199,8 @@ export const storedTaskInputSchema = z.object({
   skills: z.array(z.enum(supportedSkills)).optional(),
   model: z.string().trim().min(1).optional(),
   modelConfig: storedModelConfigSchema.optional(),
+  agentSkills: z.array(z.string().trim().min(1)).optional(),
+  customAgentSkill: z.string().optional(),
 }).transform((input) => {
   const skills = normalizeSkillList(input.skills ?? input.skill);
   return {
@@ -197,6 +208,8 @@ export const storedTaskInputSchema = z.object({
     chainId: input.chainId,
     skills,
     modelConfig: input.modelConfig,
+    agentSkills: normalizeGenerationSkillIds(input.agentSkills),
+    customAgentSkill: normalizeCustomGenerationSkill(input.customAgentSkill),
   };
 });
 
@@ -418,23 +431,26 @@ export interface AnalyzeContractResult extends AnalysisSummary {
   warnings: string[];
 }
 
-export function toBuilderTaskRequest(input: BuilderTaskInput | BuilderTaskRequest): BuilderTaskRequest {
-  if ('chainId' in input) {
+export function toBuilderTaskRequest(input: unknown): BuilderTaskRequest {
+  if (typeof input === 'object' && input !== null && 'chainId' in input) {
     return builderTaskRequestSchema.parse(input);
   }
 
+  const parsed = builderTaskInputSchema.parse(input);
   return builderTaskRequestSchema.parse({
-    contractAddress: input.contractAddress,
-    chainId: chainKeyToId[input.chain],
-    skills: input.skills,
-    skill: input.skill,
-    model: input.model,
-    apiKey: input.apiKey,
-    modelConfig: input.modelConfig,
+    contractAddress: parsed.contractAddress,
+    chainId: chainKeyToId[parsed.chain],
+    skills: parsed.skills,
+    skill: parsed.skill,
+    model: parsed.model,
+    apiKey: parsed.apiKey,
+    modelConfig: parsed.modelConfig,
+    agentSkills: parsed.agentSkills,
+    customAgentSkill: parsed.customAgentSkill,
   });
 }
 
-export function sanitizeTaskInput(input: BuilderTaskInput | BuilderTaskRequest): StoredTaskInput {
+export function sanitizeTaskInput(input: unknown): StoredTaskInput {
   const request = toBuilderTaskRequest(input);
   return storedTaskInputSchema.parse({
     contractAddress: request.contractAddress,
@@ -443,8 +459,14 @@ export function sanitizeTaskInput(input: BuilderTaskInput | BuilderTaskRequest):
     skill: request.skill,
     model: request.model,
     modelConfig: request.modelConfig
-      ? { providerId: request.modelConfig.providerId, baseUrl: request.modelConfig.baseUrl, model: request.modelConfig.model }
+      ? {
+          ...(request.modelConfig.providerId ? { providerId: request.modelConfig.providerId } : {}),
+          baseUrl: request.modelConfig.baseUrl,
+          model: request.modelConfig.model,
+        }
       : undefined,
+    agentSkills: request.agentSkills,
+    customAgentSkill: request.customAgentSkill,
   });
 }
 

@@ -58,6 +58,8 @@ describe('guided generation shared schema', () => {
         baseUrl: 'https://example.test/v1',
         model: 'custom-model',
       },
+      agentSkills: ['popular-web-designs', 'wallet-first-flow', 'risk-aware-transactions'],
+      customAgentSkill: '',
     });
   });
 

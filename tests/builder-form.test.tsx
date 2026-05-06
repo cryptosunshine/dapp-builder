@@ -14,6 +14,11 @@ describe('BuilderForm', () => {
     expect(screen.getByRole('button', { name: /nft mint/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /voting/i })).toBeInTheDocument();
     expect(screen.getByText(/wallet connection, guided flow, and safety copy are included automatically/i)).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /generation skills/i })).toBeInTheDocument();
+    expect(screen.getByText(/default skills loaded for every dapp/i)).toBeInTheDocument();
+    expect(screen.getByText(/popular web design systems/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /aave dashboard pattern/i })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('textbox', { name: /custom skill/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /model account/i })).toHaveValue('local-hermes-agent');
     expect(screen.getByText(/default generator/i)).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: /^api key$/i })).not.toBeInTheDocument();
@@ -43,6 +48,8 @@ describe('BuilderForm', () => {
         model: 'current-hermes-model',
         apiKey: '',
       },
+      agentSkills: ['popular-web-designs', 'wallet-first-flow', 'risk-aware-transactions'],
+      customAgentSkill: '',
     }));
   });
 
@@ -61,6 +68,30 @@ describe('BuilderForm', () => {
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
       skill: 'token-dashboard',
       skills: ['token-dashboard', 'injected-wallet', 'guided-flow', 'risk-explainer'],
+    }));
+  });
+
+  test('selects optional GitHub-inspired generation skills and custom skill guidance', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+
+    render(<BuilderForm onSubmit={onSubmit} isSubmitting={false} />);
+
+    await user.click(screen.getByRole('button', { name: /aave dashboard pattern/i }));
+    await user.click(screen.getByRole('button', { name: /openzeppelin security pattern/i }));
+    await user.type(screen.getByRole('textbox', { name: /custom skill/i }), 'Make it feel like a compact DeFi portfolio.');
+    await user.type(screen.getByLabelText(/contract address/i), '0x1234567890123456789012345678901234567890');
+    await user.click(screen.getByRole('button', { name: /generate dapp preview/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      agentSkills: [
+        'popular-web-designs',
+        'wallet-first-flow',
+        'risk-aware-transactions',
+        'aave-dashboard-pattern',
+        'openzeppelin-security-pattern',
+      ],
+      customAgentSkill: 'Make it feel like a compact DeFi portfolio.',
     }));
   });
 
