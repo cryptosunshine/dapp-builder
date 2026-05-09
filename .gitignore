@@ -7,3 +7,4 @@ coverage
 .env.*
 data/tasks
 data/generated-dapps
+data/experiments

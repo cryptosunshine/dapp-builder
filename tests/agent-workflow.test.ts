@@ -99,7 +99,7 @@ describe('agent generated dApp workflow', () => {
         expect(prompt).toContain('src/styles.css');
         expect(prompt).toContain('Do not include package.json');
         expect(prompt).toContain('balanceOf, transfer, allowance, approve');
-        expect(prompt).toContain('Default generation skills loaded by dapp-builder');
+        expect(prompt).toContain('Available default generation skills in dapp-builder');
         expect(prompt).toContain('Popular web design systems');
         expect(prompt).toContain('Aave-style app structure');
         expect(prompt).toContain('Prefer a compact DeFi portfolio workspace.');

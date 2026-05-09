@@ -85,11 +85,17 @@ export const generationSkillCatalog: GenerationSkillCatalogItem[] = [
 ];
 
 export function normalizeGenerationSkillIds(value: unknown): string[] {
+  if (Array.isArray(value) && value.length === 0) {
+    return [];
+  }
   const raw = Array.isArray(value) ? value : value ? [value] : defaultGenerationSkillIds;
   const allowed = new Set(generationSkillCatalog.map((skill) => skill.id));
   const normalized = raw
     .map((entry) => String(entry).trim())
     .filter((entry) => allowed.has(entry));
+  if (Array.isArray(value)) {
+    return Array.from(new Set(normalized));
+  }
   return Array.from(new Set(normalized.length > 0 ? normalized : [...defaultGenerationSkillIds]));
 }
 
@@ -118,6 +124,6 @@ export function describeGenerationSkills(skillIds: unknown, customSkill = '') {
     selected,
     defaultSkills,
     hermesSkills,
-    promptBlock: lines.join('\n') || '- Use the built-in dApp generation defaults.',
+    promptBlock: lines.join('\n') || '- No additional generation skills selected. Use only the contract context and base safety/product rules.',
   };
 }

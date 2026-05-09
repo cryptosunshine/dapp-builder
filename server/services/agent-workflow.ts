@@ -356,7 +356,7 @@ function buildFrontendPrompt(input: RunAgentGeneratedDappWorkflowInput) {
   const defaultSkillLabels = generationSkills.defaultSkills.map((skill) => skill.label).join(', ');
   return clampPrompt(`Frontend agent. Return only JSON: {"summary":"...","files":[{"path":"index.html","content":"..."},{"path":"src/App.jsx","content":"..."},{"path":"src/styles.css","content":"..."}]}.
 Generate compact React source directly from the context. Product-like, not ABI scan. Use only methods in context. No secrets.
-Default generation skills loaded by dapp-builder: ${defaultSkillLabels}.
+Available default generation skills in dapp-builder: ${defaultSkillLabels}.
 Selected generation skills that must influence the output:
 ${generationSkills.promptBlock}
 Do not include package.json, vite.config.js, dependencies, markdown, or explanations.
