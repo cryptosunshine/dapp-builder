@@ -1,5 +1,4 @@
 import { access, mkdtemp, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 import { createGeneratedAppArtifact } from '../server/services/generated-apps';
@@ -12,13 +11,13 @@ afterEach(async () => {
 
 const validFiles = [
   { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-  { path: 'src/App.jsx', content: "import './styles.css'; export default function App(){ return <main>Agent generated dApp</main>; }" },
+  { path: 'src/App.jsx', content: "import { createRoot } from 'react-dom/client'; import './styles.css'; function App(){ return <main>Agent generated dApp</main>; } createRoot(document.getElementById('root')).render(<App />);" },
   { path: 'src/styles.css', content: 'main { color: #111827; }' },
 ];
 
 describe('generated app artifacts', () => {
   test('writes agent generated source into a task directory and returns preview metadata without building when disabled', async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), 'generated-dapps-'));
+    const rootDir = await mkdtemp(join(process.cwd(), '.generated-dapps-test-'));
     cleanupPaths.push(rootDir);
 
     const artifact = await createGeneratedAppArtifact({
@@ -36,12 +35,12 @@ describe('generated app artifacts', () => {
     expect(artifact.generationMode).toBe('agent');
     expect(await readFile(join(rootDir, 'task-safe/source/src/App.jsx'), 'utf8')).toContain('Agent generated dApp');
     expect(await readFile(join(rootDir, 'task-safe/source/package.json'), 'utf8')).toContain('"vite build"');
-    expect(await readFile(join(rootDir, 'task-safe/source/vite.config.js'), 'utf8')).toContain("base: './'");
+    expect(await readFile(join(rootDir, 'task-safe/source/vite.config.js'), 'utf8')).toContain("plugins: [react()]");
     await expect(readFile(join(rootDir, 'task-safe/source/src/App.jsx'), 'utf8')).resolves.not.toContain('secret-key');
   });
 
   test('builds generated React source with relative dist asset paths', async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), 'generated-dapps-'));
+    const rootDir = await mkdtemp(join(process.cwd(), '.generated-dapps-test-'));
     cleanupPaths.push(rootDir);
 
     const artifact = await createGeneratedAppArtifact({
@@ -65,11 +64,11 @@ describe('generated app artifacts', () => {
     expect(assetPath).toBeTruthy();
     await expect(access(join(rootDir, 'task-build/dist', assetPath!.replace(/^\.\//, '')))).resolves.toBeUndefined();
     await expect(readFile(join(rootDir, 'task-build/source/package.json'), 'utf8')).resolves.not.toContain('postinstall');
-    await expect(readFile(join(rootDir, 'task-build/source/vite.config.js'), 'utf8')).resolves.toContain("base: './'");
+    await expect(readFile(join(rootDir, 'task-build/source/vite.config.js'), 'utf8')).resolves.toContain("plugins: [react()]");
   });
 
-  test('rejects path traversal and missing required React entry files', async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), 'generated-dapps-'));
+  test('rejects path traversal, blank React entries, and missing required React entry files', async () => {
+    const rootDir = await mkdtemp(join(process.cwd(), '.generated-dapps-test-'));
     cleanupPaths.push(rootDir);
 
     await expect(createGeneratedAppArtifact({
@@ -80,6 +79,17 @@ describe('generated app artifacts', () => {
       designSpec: { role: 'designer', title: 'Token design', markdown: '# Token design' },
       build: false,
     })).rejects.toThrow(/unsafe generated file path/i);
+
+    await expect(createGeneratedAppArtifact({
+      taskId: 'task-blank-entry',
+      rootDir,
+      files: validFiles.map((file) => file.path === 'src/App.jsx'
+        ? { ...file, content: "import './styles.css'; export default function App(){ return <main>Blank</main>; }" }
+        : file),
+      productPlan: { role: 'product-manager', title: 'Token flow', markdown: '# Token flow' },
+      designSpec: { role: 'designer', title: 'Token design', markdown: '# Token design' },
+      build: false,
+    })).rejects.toThrow(/does not mount a React app/i);
 
     await expect(createGeneratedAppArtifact({
       taskId: 'task-missing-entry',

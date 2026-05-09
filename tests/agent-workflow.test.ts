@@ -64,7 +64,7 @@ describe('agent generated dApp workflow', () => {
           summary: 'Generated React token dashboard.',
           files: [
             { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-            { path: 'src/App.jsx', content: "import './styles.css'; export default function App(){ return <main>Agent token dashboard</main>; }" },
+            { path: 'src/App.jsx', content: "import { createRoot } from 'react-dom/client'; import './styles.css'; function App(){ return <main>Agent token dashboard</main>; } createRoot(document.getElementById('root')).render(<App />);" },
             { path: 'src/styles.css', content: 'main { color: #111827; }' },
           ],
         };
@@ -103,7 +103,7 @@ describe('agent generated dApp workflow', () => {
         expect(prompt).toContain('Popular web design systems');
         expect(prompt).toContain('Aave-style app structure');
         expect(prompt).toContain('Prefer a compact DeFi portfolio workspace.');
-        return '```json\n{"summary":"Generated React token dashboard.","files":[{"path":"index.html","content":"<div id=\\"root\\"></div><script type=\\"module\\" src=\\"/src/App.jsx\\"></script>"},{"path":"src/App.jsx","content":"import \\"./styles.css\\"; export default function App(){ return <main>Agent token dashboard</main>; }"},{"path":"src/styles.css","content":"main { color: #111827; }"}]}\n```';
+        return '```json\n{"summary":"Generated React token dashboard.","files":[{"path":"index.html","content":"<div id=\\"root\\"></div><script type=\\"module\\" src=\\"/src/App.jsx\\"></script>"},{"path":"src/App.jsx","content":"import { createRoot } from \\"react-dom/client\\"; import \\"./styles.css\\"; function App(){ return <main>Agent token dashboard</main>; } createRoot(document.getElementById(\\"root\\")).render(<App />);"},{"path":"src/styles.css","content":"main { color: #111827; }"}]}\n```';
       },
     });
 
@@ -164,7 +164,7 @@ describe('agent generated dApp workflow', () => {
           summary: 'Generated React token dashboard.',
           files: [
             { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-            { path: 'src/App.jsx', content: "import './styles.css'; export default function App(){ return <main>Agent token dashboard</main>; }" },
+            { path: 'src/App.jsx', content: "import { createRoot } from 'react-dom/client'; import './styles.css'; function App(){ return <main>Agent token dashboard</main>; } createRoot(document.getElementById('root')).render(<App />);" },
             { path: 'src/styles.css', content: 'main { color: #111827; }' },
           ],
         };
@@ -206,7 +206,7 @@ describe('agent generated dApp workflow', () => {
           summary: 'Hermes generated React token dashboard.',
           files: [
             { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-            { path: 'src/App.jsx', content: "import './styles.css'; export default function App(){ return <main>Hermes token dashboard</main>; }" },
+            { path: 'src/App.jsx', content: "import { createRoot } from 'react-dom/client'; import './styles.css'; function App(){ return <main>Hermes token dashboard</main>; } createRoot(document.getElementById('root')).render(<App />);" },
             { path: 'src/styles.css', content: 'main { color: #111827; }' },
           ],
         };

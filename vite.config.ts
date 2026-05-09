@@ -11,6 +11,10 @@ export default defineConfig({
         target: 'http://localhost:8787',
         changeOrigin: true,
       },
+      '/generated-dapps': {
+        target: 'http://localhost:8787',
+        changeOrigin: true,
+      },
     },
   },
   test: {

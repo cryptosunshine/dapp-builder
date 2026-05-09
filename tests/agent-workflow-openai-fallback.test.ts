@@ -39,7 +39,7 @@ function generatedReactApp(content: string) {
     summary: 'Generated React token dashboard.',
     files: [
       { path: 'index.html', content: '<div id="root"></div><script type="module" src="/src/App.jsx"></script>' },
-      { path: 'src/App.jsx', content: `import './styles.css'; export default function App(){ return <main>${content}</main>; }` },
+      { path: 'src/App.jsx', content: `import { createRoot } from 'react-dom/client'; import './styles.css'; function App(){ return <main>${content}</main>; } createRoot(document.getElementById('root')).render(<App />);` },
       { path: 'src/styles.css', content: 'main { color: #111827; }' },
     ],
   };

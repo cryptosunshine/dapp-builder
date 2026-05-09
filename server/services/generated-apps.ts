@@ -102,7 +102,7 @@ async function writeGeneratedAppSource(sourceDir: string, files: GeneratedAppFil
     },
     {
       path: 'vite.config.js',
-      content: "import { defineConfig } from 'vite';\n\nexport default defineConfig({\n  base: './',\n});\n",
+      content: "import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  base: './',\n  plugins: [react()],\n});\n",
     },
   ];
 
@@ -150,6 +150,20 @@ async function validateBuiltAssets(distDir: string) {
     }
 
     await access(resolve(distDir, normalized));
+  }
+}
+
+async function validateGeneratedSource(sourceDir: string) {
+  const appPath = resolve(sourceDir, 'src', 'App.jsx');
+  const appSource = await readFile(appPath, 'utf8');
+  if (!/createRoot\s*\(/.test(appSource) || !/\.render\s*\(/.test(appSource) || !/getElementById\s*\(\s*['"]root['"]\s*\)/.test(appSource)) {
+    throw new Error('Generated App.jsx does not mount a React app into #root.');
+  }
+  const forbiddenImports = [...appSource.matchAll(/from\s+['"]([^.'"][^'"]*)['"]/g)].map((match) => match[1]);
+  const allowedImports = new Set(['react', 'react-dom/client', 'viem']);
+  const unsupported = forbiddenImports.filter((name) => !allowedImports.has(name) && !name.startsWith('viem/'));
+  if (unsupported.length > 0) {
+    throw new Error(`Generated App.jsx imports unsupported package(s): ${unsupported.join(', ')}.`);
   }
 }
 
@@ -208,6 +222,7 @@ export async function createGeneratedAppArtifact({
   assertNoSecrets(files, apiKey);
 
   await writeGeneratedAppSource(sourceDir, files);
+  await validateGeneratedSource(sourceDir);
   let buildStatus: GeneratedAppArtifact['buildStatus'] = 'skipped';
   if (build) {
     await buildGeneratedApp(sourceDir, distDir);

@@ -267,7 +267,7 @@ async function main() {
         modelLabel: model.label,
         skillId: skill.id,
         skillLabel: skill.label,
-        status: result.status === 'failed' ? 'failed' : 'success',
+        status: generatedApp?.generationMode === 'fallback' || result.status === 'failed' ? 'failed' : 'success',
         previewUrl: generatedApp?.previewUrl,
         sourceDir: generatedApp?.sourceDir,
         distDir: generatedApp?.distDir,

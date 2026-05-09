@@ -284,6 +284,8 @@ Rules:
 - Do not include secrets.
 - Make the UI product-like, not a scanner or raw ABI dump.
 - index.html must load /src/App.jsx.
+- src/App.jsx must mount the app itself with createRoot(document.getElementById('root')).render(<App />); do not only export a component.
+- Use only React 18, react-dom/client, viem, browser APIs, and ./styles.css imports. Do not import ethers, wagmi, @web3-react, or any package not already available.
 - The React app must be buildable by Vite with React 18.
 
 Generation brief:
@@ -360,6 +362,8 @@ Available default generation skills in dapp-builder: ${defaultSkillLabels}.
 Selected generation skills that must influence the output:
 ${generationSkills.promptBlock}
 Do not include package.json, vite.config.js, dependencies, markdown, or explanations.
+Use only React 18, react-dom/client, viem, browser APIs, and ./styles.css imports. Do not import ethers, wagmi, @web3-react, or any package not already available.
+src/App.jsx must mount the UI itself: import { createRoot } from 'react-dom/client' and call createRoot(document.getElementById('root')).render(<App />). Do not only export App.
 If the context contains ERC20/token methods, the generated app must include real token actions for available methods such as balanceOf, transfer, allowance, approve, decimals, symbol, and totalSupply. Do not hide available ERC20 actions just because the page should not look like a raw ABI dump.
 For ERC20 pages, organize those methods as product flows: wallet balance, send tokens, approval safety, allowance check, and advanced token actions.
 The app should include wallet connection UI, primary user flow, safety notes, and compact advanced method access.
