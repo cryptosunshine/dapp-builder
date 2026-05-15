@@ -11,21 +11,15 @@ vi.mock('../src/lib/api', () => ({
 }));
 
 describe('Builder home product layout', () => {
-<<<<<<< HEAD
-  test('renders a streamlined generator surface without unused navigation or framing modules', () => {
-=======
   test('renders the protocol landing page with bilingual product narrative', async () => {
     const user = userEvent.setup();
 
->>>>>>> f01071c (landing page)
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     );
 
-<<<<<<< HEAD
-=======
     expect(screen.getByRole('banner', { name: /agentic payment navigation/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /agentic payment layer/i })).toBeInTheDocument();
     expect(screen.getByText(/ai understands intent/i)).toBeInTheDocument();
@@ -42,15 +36,13 @@ describe('Builder home product layout', () => {
     expect(screen.getByRole('link', { name: /启动 dapp builder/i })).toHaveAttribute('href', '/builder');
   });
 
-  test('renders an Aave-style dashboard shell instead of a plain tool form on /builder', () => {
+  test('renders a streamlined generator surface without unused navigation or framing modules on /builder', () => {
     render(
       <MemoryRouter initialEntries={['/builder']}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByLabelText(/builder announcement/i)).toBeInTheDocument();
->>>>>>> f01071c (landing page)
     expect(screen.getByLabelText(/builder navigation/i)).toBeInTheDocument();
     expect(screen.queryByText(/generate a wallet-ready app from a contract/i)).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: /builder launchpad/i })).toBeInTheDocument();
