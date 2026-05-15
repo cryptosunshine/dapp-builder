@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, test, vi } from 'vitest';
 import App from '../src/App';
@@ -10,13 +11,46 @@ vi.mock('../src/lib/api', () => ({
 }));
 
 describe('Builder home product layout', () => {
+<<<<<<< HEAD
   test('renders a streamlined generator surface without unused navigation or framing modules', () => {
+=======
+  test('renders the protocol landing page with bilingual product narrative', async () => {
+    const user = userEvent.setup();
+
+>>>>>>> f01071c (landing page)
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     );
 
+<<<<<<< HEAD
+=======
+    expect(screen.getByRole('banner', { name: /agentic payment navigation/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /agentic payment layer/i })).toBeInTheDocument();
+    expect(screen.getByText(/ai understands intent/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /launch dapp builder/i })).toHaveAttribute('href', '/builder');
+    expect(screen.getByRole('region', { name: /execution visual/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /smart contracts hold the budget/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /dapp builder is the first live module/i })).toBeInTheDocument();
+    expect(screen.getByText(/skill selection/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /中文/i }));
+
+    expect(screen.getByRole('heading', { name: /面向 ai agent 的链上支付与服务执行层/i })).toBeInTheDocument();
+    expect(screen.getByText(/ai 理解意图/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /启动 dapp builder/i })).toHaveAttribute('href', '/builder');
+  });
+
+  test('renders an Aave-style dashboard shell instead of a plain tool form on /builder', () => {
+    render(
+      <MemoryRouter initialEntries={['/builder']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText(/builder announcement/i)).toBeInTheDocument();
+>>>>>>> f01071c (landing page)
     expect(screen.getByLabelText(/builder navigation/i)).toBeInTheDocument();
     expect(screen.queryByText(/generate a wallet-ready app from a contract/i)).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: /builder launchpad/i })).toBeInTheDocument();
